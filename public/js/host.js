@@ -90,7 +90,8 @@ function initAudio(withTestChime = false) {
       audioCtx.resume();
     }
     if (!countdownJingleAudio) {
-      countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
+      countdownJingleAudio = new Audio("/music/jingle.mp3");
+      countdownJingleAudio.loop = true;
       countdownJingleAudio.volume = 0.95;
     }
 
@@ -100,7 +101,7 @@ function initAudio(withTestChime = false) {
       countdownJingleAudio.play().then(() => {
         countdownJingleAudio.pause();
         countdownJingleAudio.currentTime = 0;
-        console.log("🔊 HTML5 Countdown MP3 Audio successfully unlocked!");
+        console.log("🔊 HTML5 Loop Jingle MP3 Audio successfully unlocked!");
       }).catch(e => console.warn("Audio unlock catch:", e));
 
       if (withTestChime) {
@@ -110,7 +111,7 @@ function initAudio(withTestChime = false) {
 
     const banner = document.getElementById("soundUnlockBanner");
     if (banner) {
-      banner.textContent = "🔊 GAME AUDIO ACTIVE & TESTED — 10S COUNTDOWN MUSIC JINGLE READY";
+      banner.textContent = "🔊 GAME AUDIO ACTIVE & TESTED — 10S COUNTDOWN LOOP JINGLE READY";
       banner.classList.add("unlocked");
     }
     const btnToggle = document.getElementById("btnToggleSound");
@@ -124,17 +125,20 @@ function playCountdownJingleMP3() {
   try {
     initAudio(false);
     if (!countdownJingleAudio) {
-      countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
+      countdownJingleAudio = new Audio("/music/jingle.mp3");
+      countdownJingleAudio.loop = true;
       countdownJingleAudio.volume = 0.95;
     }
-    countdownJingleAudio.currentTime = 0;
-    const playPromise = countdownJingleAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        console.log("🎵 Playing 10-second countdown music jingle MP3 from host screen!");
-      }).catch(err => {
-        console.warn("MP3 playback error, falling back to Web Audio synth:", err);
-      });
+    if (countdownJingleAudio.paused) {
+      countdownJingleAudio.currentTime = 0;
+      const playPromise = countdownJingleAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("🎵 Playing looping 10-second countdown jingle.mp3 from host screen!");
+        }).catch(err => {
+          console.warn("MP3 playback error, falling back to Web Audio synth:", err);
+        });
+      }
     }
     // Play Web Audio synth alarm ticks in parallel for 100% audio guarantee
     playCountdownMusic(10);
