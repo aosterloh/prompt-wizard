@@ -258,30 +258,40 @@ if (btnCopyUrl && playerJoinUrl) {
   });
 }
 
-btnRerollShowcase.addEventListener("click", () => {
-  if (showcaseImagesList.length > 0 && startShowcaseImg) {
-    showcaseIndex = (showcaseIndex + 1) % showcaseImagesList.length;
-    startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex]);
-  } else {
-    socket.emit("host:rerollTarget", { roomCode });
-  }
-});
+if (btnRerollShowcase) {
+  btnRerollShowcase.addEventListener("click", () => {
+    if (showcaseImagesList.length > 0 && startShowcaseImg) {
+      showcaseIndex = (showcaseIndex + 1) % showcaseImagesList.length;
+      startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex]);
+    } else {
+      socket.emit("host:rerollTarget", { roomCode });
+    }
+  });
+}
 
-btnStartGame.addEventListener("click", () => {
-  socket.emit("host:startGame", { roomCode });
-});
+if (btnStartGame) {
+  btnStartGame.addEventListener("click", () => {
+    socket.emit("host:startGame", { roomCode });
+  });
+}
 
-btnForceEndPrompting.addEventListener("click", () => {
-  socket.emit("host:forceEndPrompting", { roomCode });
-});
+if (btnForceEndPrompting) {
+  btnForceEndPrompting.addEventListener("click", () => {
+    socket.emit("host:forceEndPrompting", { roomCode });
+  });
+}
 
-btnForceEndVoting.addEventListener("click", () => {
-  socket.emit("host:forceEndVoting", { roomCode });
-});
+if (btnForceEndVoting) {
+  btnForceEndVoting.addEventListener("click", () => {
+    socket.emit("host:forceEndVoting", { roomCode });
+  });
+}
 
-btnResetSession.addEventListener("click", () => {
-  socket.emit("host:resetSession", { roomCode });
-});
+if (btnResetSession) {
+  btnResetSession.addEventListener("click", () => {
+    socket.emit("host:resetSession", { roomCode });
+  });
+}
 
 // Update UI
 function updateUI(data) {
