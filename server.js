@@ -235,27 +235,13 @@ async function transitionToGenerating(room) {
 
   for (let idx = 0; idx < room.players.length; idx++) {
     const player = room.players[idx];
-    let promptText = (player.prompt || "").trim();
-    const words = promptText.split(/\s+/).filter(Boolean);
 
-    // If player did not submit a prompt or submitted < 3 words: DO NOT generate AI art, display T-Rex No Prompt Detected image!
-    if (!player.isSubmitted || words.length < 3) {
-      generatedArtworks.push({
-        letter: null,
-        playerId: player.id,
-        playerName: player.name,
-        promptText: "No prompt submitted",
-        imageUri: "/img/no_prompt_detected.jpg",
-        safe: true,
-        safetyReason: null,
-        votesCount: 0,
-        aiScore: 0
-      });
-      room.genCompletedCount = idx + 1;
-      room.genProgressPct = Math.round(((idx + 1) / room.players.length) * 100);
-      broadcastState(room.roomCode);
-      continue;
+    // Auto-use last entered prompt text even if user did not click submit before 60s timer ran out
+    let promptText = (player.prompt || "").trim();
+    if (!promptText) {
+      promptText = "A magical glowing wizard cat creating artwork, vibrant digital art";
     }
+    const words = promptText.split(/\s+/).filter(Boolean);
 
     const safetyCheck = checkPromptSafety(promptText);
     if (!safetyCheck.safe) {

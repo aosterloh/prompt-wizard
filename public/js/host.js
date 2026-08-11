@@ -57,6 +57,21 @@ let currentGameState = "LOBBY";
 let audioCtx = null;
 let lastBeepedSec = null;
 
+// Unlocks browser Web Audio API policy on user interaction (click/tap anywhere on host screen)
+function initAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch (e) {}
+}
+window.addEventListener('click', initAudio);
+window.addEventListener('touchstart', initAudio);
+window.addEventListener('keydown', initAudio);
+
 // Update Room Badge Display
 if (roomCodeBadge) {
   roomCodeBadge.textContent = `ROOM: #${roomCode}`;
@@ -384,12 +399,8 @@ function updateUI(data) {
 // Web Audio API Retro Arcade Game Countdown Music Synthesizer
 function playCountdownMusic(secondsLeft) {
   try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    initAudio();
+    if (!audioCtx) return;
 
     const now = audioCtx.currentTime;
 
