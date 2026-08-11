@@ -1,0 +1,496 @@
+/**
+ * Host Main Display JavaScript Logic
+ */
+const socket = io();
+
+// Extract Room Code from URL query param (e.g. /host?room=K9X2)
+const urlParams = new URLSearchParams(window.location.search);
+const roomCode = (urlParams.get("room") || "WIZARD").toUpperCase();
+
+// DOM Elements
+const phaseBadge = document.getElementById("phaseBadge");
+const roomCodeBadge = document.getElementById("roomCodeBadge");
+const btnNewRoom = document.getElementById("btnNewRoom");
+
+const timerValue = document.getElementById("timerValue");
+const prominentCountdownBox = document.getElementById("prominentCountdownBox");
+const prominentTimerValue = document.getElementById("prominentTimerValue");
+
+const qrCodeImg = document.getElementById("qrCodeImg");
+const playerJoinUrl = document.getElementById("playerJoinUrl");
+const startShowcaseImg = document.getElementById("startShowcaseImg");
+
+const playerCount = document.getElementById("playerCount");
+const playerList = document.getElementById("playerList");
+
+const btnRerollShowcase = document.getElementById("btnRerollShowcase");
+const btnStartGame = document.getElementById("btnStartGame");
+const btnForceEndPrompting = document.getElementById("btnForceEndPrompting");
+const btnForceEndVoting = document.getElementById("btnForceEndVoting");
+const btnResetSession = document.getElementById("btnResetSession");
+
+const stageLobby = document.getElementById("stageLobby");
+const stagePrompting = document.getElementById("stagePrompting");
+const stageGenerating = document.getElementById("stageGenerating");
+const stageVoting = document.getElementById("stageVoting");
+const stageTieBreak = document.getElementById("stageTieBreak");
+const stageResults = document.getElementById("stageResults");
+
+const promptingTargetImg = document.getElementById("promptingTargetImg");
+const promptProgressBar = document.getElementById("promptProgressBar");
+const promptProgressText = document.getElementById("promptProgressText");
+
+const genTargetImg = document.getElementById("genTargetImg");
+const genProgressBarFill = document.getElementById("genProgressBarFill");
+const genProgressPct = document.getElementById("genProgressPct");
+const genProgressCount = document.getElementById("genProgressCount");
+const genProgressStatusText = document.getElementById("genProgressStatusText");
+
+const votingTargetImg = document.getElementById("votingTargetImg");
+const votingGrid = document.getElementById("votingGrid");
+
+const resultsTargetImg = document.getElementById("resultsTargetImg");
+const winnerSpotlight = document.getElementById("winnerSpotlight");
+const resultsGrid = document.getElementById("resultsGrid");
+
+let currentGameState = "LOBBY";
+
+// Update Room Badge Display
+if (roomCodeBadge) {
+  roomCodeBadge.textContent = `ROOM: #${roomCode}`;
+}
+
+// "New Game" Button opens a fresh independent room
+if (btnNewRoom) {
+  btnNewRoom.addEventListener("click", () => {
+    window.open("/host", "_blank");
+  });
+}
+
+const btnAiJudgeVoting = document.getElementById("btnAiJudgeVoting");
+const btnAiJudgeResults = document.getElementById("btnAiJudgeResults");
+const aiJudgeBanner = document.getElementById("aiJudgeBanner");
+const aiJudgeTitle = document.getElementById("aiJudgeTitle");
+const aiJudgeReasoning = document.getElementById("aiJudgeReasoning");
+
+let latestAiJudgeResult = null;
+
+// AI Judge Trigger Handlers
+const triggerAiJudge = () => {
+  if (btnAiJudgeVoting) {
+    btnAiJudgeVoting.disabled = true;
+    btnAiJudgeVoting.textContent = "🤖 Gemini AI Judge Thinking...";
+  }
+  if (btnAiJudgeResults) {
+    btnAiJudgeResults.disabled = true;
+    btnAiJudgeResults.textContent = "🤖 Gemini AI Judge Thinking...";
+  }
+  socket.emit("host:askAiJudge", { roomCode });
+};
+
+if (btnAiJudgeVoting) btnAiJudgeVoting.addEventListener("click", triggerAiJudge);
+if (btnAiJudgeResults) btnAiJudgeResults.addEventListener("click", triggerAiJudge);
+
+socket.on("room:aiJudgeResult", (result) => {
+  latestAiJudgeResult = result;
+  if (btnAiJudgeVoting) {
+    btnAiJudgeVoting.disabled = false;
+    btnAiJudgeVoting.textContent = "🤖 AI Judge (Gemini Pick)";
+  }
+  if (btnAiJudgeResults) {
+    btnAiJudgeResults.disabled = false;
+    btnAiJudgeResults.textContent = "🤖 AI Judge (Gemini Pick)";
+  }
+
+  if (aiJudgeBanner && aiJudgeTitle && aiJudgeReasoning && result) {
+    aiJudgeTitle.textContent = `Choice ${result.winningLetter} (${result.winnerName})`;
+    aiJudgeReasoning.textContent = result.reasoning;
+    aiJudgeBanner.classList.remove("hidden");
+  }
+
+  // Re-render grids to highlight AI Judge Pick
+  if (currentGameState === "VOTING") {
+    renderVotingGrid(window.lastGeneratedArtworks);
+  } else if (currentGameState === "RESULTS") {
+    renderResultsGrid(window.lastGeneratedArtworks, window.lastWinningArtworks);
+  }
+});
+
+// Register Host for specific Room Code
+socket.emit("host:register", { roomCode });
+// Fetch QR Code for specific Room Code
+async function loadQrCode(targetCode) {
+  const code = (targetCode || roomCode || "WIZARD").toUpperCase();
+  try {
+    const res = await fetch(`/api/qr?room=${encodeURIComponent(code)}`);
+    const data = await res.json();
+    if (data.qrUri && qrCodeImg) {
+      qrCodeImg.src = data.qrUri;
+      if (playerJoinUrl) playerJoinUrl.textContent = data.playerUrl;
+    }
+  } catch (err) {
+    console.error("Failed to load QR code:", err);
+  }
+}
+loadQrCode(roomCode);
+
+// Socket Listeners
+socket.on("room:stateUpdate", (data) => {
+  updateUI(data);
+});
+
+socket.on("room:timerUpdate", ({ timer }) => {
+  if (currentGameState === "GENERATING") {
+    if (timerValue) {
+      timerValue.textContent = "--";
+      timerValue.classList.remove("timer-urgent");
+    }
+    if (prominentTimerValue) prominentTimerValue.textContent = "--";
+    return;
+  }
+
+  if (timerValue) {
+    timerValue.textContent = timer > 0 ? `${timer}s` : "--";
+  }
+  if (prominentTimerValue) {
+    prominentTimerValue.textContent = timer > 0 ? `${timer}` : "0";
+  }
+
+  if (timer > 0 && timer <= 10) {
+    if (timerValue) timerValue.classList.add("timer-urgent");
+    if (prominentCountdownBox) prominentCountdownBox.classList.add("urgent-prominent");
+    if (currentGameState === "PROMPTING" && lastBeepedSec !== timer) {
+      lastBeepedSec = timer;
+      playCountdownBeep(timer);
+    }
+  } else {
+    if (timerValue) timerValue.classList.remove("timer-urgent");
+    if (prominentCountdownBox) prominentCountdownBox.classList.remove("urgent-prominent");
+  }
+});
+
+let showcaseImagesList = [];
+let showcaseIndex = 0;
+
+// Automated 2-Second Showcase Image Rotation in Lobby
+setInterval(() => {
+  if (currentGameState === "LOBBY" && showcaseImagesList.length > 0 && startShowcaseImg) {
+    showcaseIndex = (showcaseIndex + 1) % showcaseImagesList.length;
+    startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex]);
+  }
+}, 2000);
+
+// Event Listeners for Host Controls with roomCode payload
+const btnCopyUrl = document.getElementById("btnCopyUrl");
+if (btnCopyUrl && playerJoinUrl) {
+  btnCopyUrl.addEventListener("click", () => {
+    const textToCopy = playerJoinUrl.textContent;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      btnCopyUrl.textContent = "✓ Copied!";
+      setTimeout(() => { btnCopyUrl.textContent = "📋 Copy"; }, 2000);
+    }).catch(err => {
+      console.error("Copy error:", err);
+    });
+  });
+}
+
+btnRerollShowcase.addEventListener("click", () => {
+  if (showcaseImagesList.length > 0 && startShowcaseImg) {
+    showcaseIndex = (showcaseIndex + 1) % showcaseImagesList.length;
+    startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex]);
+  } else {
+    socket.emit("host:rerollTarget", { roomCode });
+  }
+});
+
+btnStartGame.addEventListener("click", () => {
+  socket.emit("host:startGame", { roomCode });
+});
+
+btnForceEndPrompting.addEventListener("click", () => {
+  socket.emit("host:forceEndPrompting", { roomCode });
+});
+
+btnForceEndVoting.addEventListener("click", () => {
+  socket.emit("host:forceEndVoting", { roomCode });
+});
+
+btnResetSession.addEventListener("click", () => {
+  socket.emit("host:resetSession", { roomCode });
+});
+
+// Update UI
+function updateUI(data) {
+  const { 
+    gameState, 
+    startShowcaseImage, 
+    allLocalImages = [],
+    currentTargetImage, 
+    players, 
+    generatedArtworks, 
+    winningArtworks,
+    aiJudgeResult,
+    genProgressPct = 0,
+    genCompletedCount = 0,
+    genTotalCount = 5
+  } = data;
+  currentGameState = gameState;
+
+  if (data.roomCode) {
+    loadQrCode(data.roomCode);
+  }
+
+  if (Array.isArray(allLocalImages) && allLocalImages.length > 0) {
+    showcaseImagesList = allLocalImages.filter(img => /\/target.*\.png$/i.test(img));
+    if (startShowcaseImg && (!startShowcaseImg.src || startShowcaseImg.src === location.href || startShowcaseImg.src.includes("cat_artwork"))) {
+      if (showcaseImagesList.length > 0) {
+        startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex] || showcaseImagesList[0]);
+      }
+    }
+  }
+
+  if (aiJudgeResult) {
+    latestAiJudgeResult = aiJudgeResult;
+    if (aiJudgeBanner && aiJudgeTitle && aiJudgeReasoning) {
+      const judgeBadge = aiJudgeBanner.querySelector(".ai-judge-badge");
+      if (judgeBadge) judgeBadge.textContent = "⚖️ AI TIE-BREAKER PICK";
+      aiJudgeTitle.textContent = `Choice ${aiJudgeResult.winningLetter} (${aiJudgeResult.winnerName})`;
+      aiJudgeReasoning.textContent = aiJudgeResult.reasoning;
+      aiJudgeBanner.classList.remove("hidden");
+    }
+  } else {
+    latestAiJudgeResult = null;
+    if (aiJudgeBanner) aiJudgeBanner.classList.add("hidden");
+  }
+
+  // Header Phase Badge
+  if (phaseBadge) {
+    phaseBadge.textContent = gameState;
+    phaseBadge.className = `phase-badge badge-${gameState.toLowerCase()}`;
+  }
+
+  // Showcase & Target Images
+  if (startShowcaseImage && startShowcaseImg && showcaseImagesList.length === 0) {
+    const encodedUri = encodeURI(startShowcaseImage);
+    const fullUri = new URL(encodedUri, window.location.origin).href;
+    if (startShowcaseImg.src !== fullUri) {
+      startShowcaseImg.src = encodedUri;
+    }
+  }
+  if (currentTargetImage) {
+    const encodedTarget = encodeURI(currentTargetImage);
+    const fullTargetUrl = new URL(encodedTarget, window.location.origin).href;
+
+    if (promptingTargetImg && promptingTargetImg.src !== fullTargetUrl) {
+      promptingTargetImg.src = encodedTarget;
+    }
+    if (votingTargetImg && votingTargetImg.src !== fullTargetUrl) {
+      votingTargetImg.src = encodedTarget;
+    }
+    if (resultsTargetImg && resultsTargetImg.src !== fullTargetUrl) {
+      resultsTargetImg.src = encodedTarget;
+    }
+    if (genTargetImg && genTargetImg.src !== fullTargetUrl) {
+      genTargetImg.src = encodedTarget;
+    }
+  }
+
+  // Player Counter
+  if (playerCount) playerCount.textContent = `${players.length}`;
+
+  // Start Button state (Hovering over Gallery Preview)
+  if (btnStartGame) {
+    btnStartGame.disabled = players.length < 2;
+    btnStartGame.textContent = players.length >= 2 ? "🚀 Start Game" : "Waiting for Players (Min 2)";
+  }
+
+// Web Audio API Game Countdown Synthesizer
+let audioCtx = null;
+let lastBeepedSec = null;
+
+function playCountdownBeep(secondsLeft) {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    
+    // Pitch escalates for final 3 seconds
+    const frequency = secondsLeft <= 3 ? 880 : (secondsLeft <= 5 ? 660 : 440);
+    osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+    // Beep envelope (0.15s duration with clean decay)
+    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (err) {
+    console.error("Audio countdown error:", err);
+  }
+}
+
+// Stage View Switching
+  [stageLobby, stagePrompting, stageGenerating, stageVoting, stageTieBreak, stageResults].forEach(s => {
+    if (s) s.classList.remove("active");
+  });
+
+  if (gameState === "LOBBY") {
+    lastBeepedSec = null;
+    if (stageLobby) stageLobby.classList.add("active");
+  } else if (gameState === "PROMPTING") {
+    if (stagePrompting) stagePrompting.classList.add("active");
+    if (prominentTimerValue && typeof data.timer === "number" && data.timer >= 0) {
+      prominentTimerValue.textContent = `${data.timer}`;
+
+      // Play 10-second countdown game beep sound
+      if (data.timer <= 10 && data.timer > 0 && lastBeepedSec !== data.timer) {
+        lastBeepedSec = data.timer;
+        playCountdownBeep(data.timer);
+      }
+    }
+    const submittedCount = players.filter(p => p.isSubmitted).length;
+    const pct = players.length > 0 ? (submittedCount / players.length) * 100 : 0;
+    promptProgressBar.style.width = `${pct}%`;
+    promptProgressText.textContent = `${submittedCount} / ${players.length} Prompts Submitted`;
+  } else {
+    lastBeepedSec = null;
+  } else if (gameState === "GENERATING") {
+    if (stageGenerating) stageGenerating.classList.add("active");
+    if (genProgressBarFill) genProgressBarFill.style.width = `${genProgressPct}%`;
+    if (genProgressPct) genProgressPct.textContent = `${genProgressPct}% COMPLETE`;
+    if (genProgressCount) genProgressCount.textContent = `${genCompletedCount} / ${genTotalCount} Artworks Generated`;
+    if (genProgressStatusText) genProgressStatusText.textContent = `Synthesizing ${genTotalCount} AI Artworks using Google Nano Banana 2... (${genCompletedCount}/${genTotalCount} Complete)`;
+  } else if (gameState === "VOTING") {
+    if (stageVoting) stageVoting.classList.add("active");
+    window.lastGeneratedArtworks = generatedArtworks;
+    renderVotingGrid(generatedArtworks);
+  } else if (gameState === "TIEBREAK") {
+    if (stageTieBreak) stageTieBreak.classList.add("active");
+  } else if (gameState === "RESULTS") {
+    if (stageResults) stageResults.classList.add("active");
+    window.lastGeneratedArtworks = generatedArtworks;
+    window.lastWinningArtworks = winningArtworks;
+    renderResultsGrid(generatedArtworks, winningArtworks, data.isTie);
+  }
+}
+
+// Render Voting Grid A-E
+function renderVotingGrid(artworks) {
+  if (!artworks || artworks.length === 0) {
+    votingGrid.innerHTML = `<p style="color: var(--text-muted);">No artwork submissions to vote on.</p>`;
+    return;
+  }
+
+  const maxAiScore = Math.max(...artworks.map(a => a.aiScore || 0));
+
+  votingGrid.innerHTML = artworks.map(art => {
+    if (!art.safe) {
+      return `
+        <div class="art-card safety-card">
+          <div style="font-size: 2rem;">🛡️</div>
+          <strong style="color: var(--accent-amber); font-size: 0.9rem;">AI Safety Filter Triggered</strong>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">
+            A player prompt triggered AI content moderation guidelines. Kept safe for live audience!
+          </p>
+        </div>
+      `;
+    }
+
+    const isAiPick = latestAiJudgeResult && latestAiJudgeResult.winningLetter === art.letter;
+    const isTopScore = art.aiScore && art.aiScore === maxAiScore && maxAiScore > 0;
+
+    return `
+      <div class="art-card ${isAiPick ? 'ai-pick-border' : ''}">
+        <div class="art-letter-badge">${art.letter}</div>
+        ${typeof art.aiScore === 'number' ? `
+          <div class="ai-score-badge ${isTopScore ? 'highest-ai-score' : ''}">
+            🎯 AI Score: ${art.aiScore}/100
+          </div>
+        ` : ''}
+        ${isAiPick ? `<div class="ai-pick-chip">🤖 AI JUDGE PICK</div>` : ''}
+        <img src="${art.imageUri}" alt="Choice ${art.letter}" class="art-img" />
+      </div>
+    `;
+  }).join("");
+}
+
+// Render Results Grid & Winner Spotlight
+function renderResultsGrid(artworks, winners, isTie) {
+  const hasAiReasoning = latestAiJudgeResult && latestAiJudgeResult.reasoning;
+
+  if (winners && winners.length > 0) {
+    winnerSpotlight.style.display = "flex";
+    const winner = winners[0];
+    const isTieWinner = isTie || (latestAiJudgeResult && latestAiJudgeResult.winningLetter === winner.letter);
+
+    winnerSpotlight.className = `winner-spotlight ${isTieWinner ? 'tiebreaker-winner-border' : ''}`;
+    winnerSpotlight.innerHTML = `
+      <img src="${winner.imageUri}" class="winner-art-img ${isTieWinner ? 'tiebreaker-img-border' : ''}" alt="Winning Artwork" />
+      <div class="winner-details">
+        <div class="winner-crown">${isTieWinner ? '⚖️ AI TIE-BREAKER WINNER!' : '🏆 WINNER!'} (${winner.votesCount} ${winner.votesCount === 1 ? 'Vote' : 'Votes'})</div>
+        <div class="winner-name">${winner.playerName}</div>
+        <div class="winner-prompt-box">
+          "${winner.promptText}"
+        </div>
+        ${hasAiReasoning ? `
+          <div class="ai-explainer-box">
+            🤖 <strong>AI Judge Rationale:</strong> ${latestAiJudgeResult.reasoning}
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    if (window.confetti && !winnerSpotlight.dataset.confettiFired) {
+      winnerSpotlight.dataset.confettiFired = "true";
+      window.confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  } else {
+    winnerSpotlight.style.display = "none";
+  }
+
+  const maxAiScore = Math.max(...(artworks || []).map(a => a.aiScore || 0));
+
+  resultsGrid.innerHTML = (artworks || []).map(art => {
+    const isWinner = winners && winners.some(w => w.letter === art.letter);
+    const isAiPick = latestAiJudgeResult && latestAiJudgeResult.winningLetter === art.letter;
+    const isTopScore = art.aiScore && art.aiScore === maxAiScore && maxAiScore > 0;
+
+    return `
+      <div class="results-card ${isWinner ? (isTie ? 'tiebreaker-card-border' : 'winner-border') : ''} ${isAiPick && isTie ? 'tiebreaker-card-border' : ''}">
+        <div class="results-card-header">
+          <strong style="color: white; font-size: 1.1rem; font-weight: 800;">${art.playerName}</strong>
+          ${isAiPick && isTie ? `<span class="ai-pick-chip-sm">⚖️ AI TIE-BREAKER</span>` : ''}
+          ${typeof art.aiScore === 'number' ? `
+            <span class="ai-score-badge-sm ${isTopScore ? 'highest-ai-score' : ''}">
+              🎯 ${art.aiScore}/100
+            </span>
+          ` : ''}
+          ${art.votesCount > 0 ? `
+            <span class="results-vote-badge">
+              ${art.votesCount} ${art.votesCount === 1 ? 'Vote' : 'Votes'}
+            </span>
+          ` : ''}
+        </div>
+        <img src="${art.imageUri}" alt="${art.playerName}" class="results-img ${(isWinner || isAiPick) && isTie ? 'tiebreaker-img-border' : ''}" />
+        <div class="results-prompt-box">
+          "${art.promptText || 'No prompt'}"
+        </div>
+      </div>
+    `;
+  }).join("");
+}

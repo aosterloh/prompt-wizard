@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Specification: Are You a Prompting Wizard?</title>
+    <style>
+        :root {
+            /* Google Official Brand Colors */
+            --g-blue: #4285F4;
+            --g-red: #EA4335;
+            --g-yellow: #FBBC04;
+            --g-green: #34A853;
+
+            --bg-primary: #171717;
+            --bg-secondary: #202124;
+            --bg-card: #2d2e32;
+            
+            --text-main: #f8fafc;
+            --text-muted: #9aa0a6;
+            --border-color: #3c4043;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 3px solid var(--g-blue);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .google-dots-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            margin-bottom: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--g-blue);
+        }
+
+        .g-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .g-b { background: var(--g-blue); }
+        .g-r { background: var(--g-red); }
+        .g-y { background: var(--g-yellow); }
+        .g-g { background: var(--g-green); }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, var(--g-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        section {
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--g-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            color: var(--g-green);
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p, li {
+            color: var(--text-main);
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Flow Diagram styling */
+        .state-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            justify-content: space-between;
+        }
+
+        .state-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--g-blue);
+            border-radius: 12px;
+            padding: 1rem;
+            flex: 1 1 150px;
+            text-align: center;
+            position: relative;
+        }
+
+        .state-box .title {
+            font-weight: 700;
+            color: var(--g-blue);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .state-box .duration {
+            font-size: 0.8rem;
+            color: var(--g-yellow);
+            font-weight: 600;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #171717;
+            color: var(--g-blue);
+            font-weight: 700;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag-resolved {
+            background-color: rgba(52, 168, 83, 0.2);
+            color: var(--g-green);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Single Vanilla Big Screen Preview */
+        .wireframe-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--bg-primary);
+            border: 2px dashed var(--g-blue);
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .wireframe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .wireframe-lobby-centerpiece {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .wireframe-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .note-box {
+            background-color: rgba(66, 133, 244, 0.1);
+            border-left: 4px solid var(--g-blue);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="google-dots-badge">
+            <span class="g-dot g-b"></span>
+            <span class="g-dot g-r"></span>
+            <span class="g-dot g-y"></span>
+            <span class="g-dot g-g"></span>
+            Architecture & Design Specification
+        </div>
+        <h1>Are You a Prompting Wizard?</h1>
+        <div class="subtitle">A real-time, multi-player AI prompt recreation web game for live demo environments.</div>
+    </header>
+
+    <!-- SECTION 1: SYSTEM OVERVIEW & RECENT DESIGN REFINEMENTS -->
+    <section>
+        <h2>1. System Architecture & Overview</h2>
+        <p><strong>"Are You a Prompting Wizard?"</strong> is a dual-screen party web application designed for interactive live event booths and presentation stages. The game challenges players to recreate target images using text prompts on their smartphones.</p>
+        
+        <ul>
+            <li><strong>Single Vanilla Big Screen (Public Display):</strong> Runs on a large TV/projector. Driven by a non-playing Event Host. Eliminates split-screen clutter for a clean, unified view featuring prominent centerpiece QR codes, target benchmark images, public timers, voting grids, and winner celebrations.</li>
+            <li><strong>Mobile Controller (Instant Player Check-In):</strong> Touch-optimized mobile web UI accessed via QR code scan. Eliminates text input for wizard names; players tap to join and are automatically assigned numbers (<strong>Wizard #1</strong>, <strong>Wizard #2</strong>, etc.) in join sequence.</li>
+            <li><strong>Google Brand Design System:</strong> Interfaces are styled using Google's official brand palette (<strong>Google Blue</strong> <code>#4285F4</code>, <strong>Red</strong> <code>#EA4335</code>, <strong>Yellow</strong> <code>#FBBC04</code>, <strong>Green</strong> <code>#34A853</code>) over dark material surfaces (<code>#171717</code> / <code>#202124</code>).</li>
+            <li><strong>Automatic 2K Image Optimization Engine:</strong> Startup routines automatically scan target image assets. Any image exceeding <strong>5 MB</strong> is automatically resized to <strong>2K high-resolution</strong> (max 2048px bounds, ~1.6MB each), improving load speeds by ~93% on mobile cellular & Wi-Fi networks.</li>
+        </ul>
+    </section>
+
+    <!-- SECTION 2: GAMEPLAY LIFECYCLE & STATE MACHINE -->
+    <section>
+        <h2>2. Game State Machine & Phase Lifecycle</h2>
+        <p>The game follows a strict, state-driven lifecycle designed to maintain high energy and prevent stalls during live audience demonstrations.</p>
+
+        <div class="state-flow">
+            <div class="state-box">
+                <span class="title">1. LOBBY</span>
+                <span class="duration">Untimed</span>
+            </div>
+            <div class="state-box">
+                <span class="title">2. PROMPTING</span>
+                <span class="duration">60 Seconds</span>
+            </div>
+            <div class="state-box">
+                <span class="title">3. GENERATING</span>
+                <span class="duration">Max 10 Seconds</span>
+            </div>
+            <div class="state-box">
+                <span class="title">4. VOTING</span>
+                <span class="duration">30 Seconds</span>
+            </div>
+            <div class="state-box">
+                <span class="title">5. RESULTS</span>
+                <span class="duration">Host Controlled</span>
+            </div>
+            <div class="state-box">
+                <span class="title">6. RESET</span>
+                <span class="duration">New Session</span>
+            </div>
+        </div>
+
+        <h3>Phase Breakdown</h3>
+        <ol>
+            <li><strong>Lobby Phase:</strong> Displays centerpiece prominent QR Code on the left side-by-side with a random gallery preview image on the right. Tracks connected players (Wizard #1, Wizard #2, etc.). <em>Enforced Rule: The start screen showcase image is strictly for gallery preview and is never used as the actual target image during play.</em></li>
+            <li><strong>Prompting Phase (60s):</strong> Main Screen shows actual game target image (selected from collection excluding start preview) and countdown timer. Players type their text prompt on mobile. Minimum requirement: <strong>2 words</strong>. Automated auto-submit triggers at 0s.</li>
+            <li><strong>Generating Phase (Parallel API Render):</strong> Backend executes all valid prompts simultaneously via procedural generative canvas engine with a hard 10-second timeout fallback.</li>
+            <li><strong>Voting Phase (30s):</strong> Main display presents target image + randomized grid of generated artwork labeled anonymously with letters (A, B, C, D, E). Mobile controllers display corresponding vote buttons.</li>
+            <li><strong>Results & Reveal Phase:</strong> Displays winning artwork (most votes), vote tallies, and full prompt & author reveals. Confetti celebration triggers.</li>
+            <li><strong>Reset Phase:</strong> Main display purges session state, resets join counters, and picks a new start preview image for the next group of spectators.</li>
+        </ol>
+    </section>
+
+    <!-- SECTION 3: HOST OVERRIDES & SAFETY -->
+    <section>
+        <h2>3. Host Controls & Content Moderation Edge Cases</h2>
+
+        <h3>Host Master Overrides</h3>
+        <ul>
+            <li><strong>Reroll Preview Image:</strong> Allows Host to draw a new random preview image on the start screen.</li>
+            <li><strong>Force Start Game:</strong> Enables Host to launch the game as soon as 1 or more players have joined.</li>
+            <li><strong>Force End Prompting:</strong> Immediately locks prompt inputs and proceeds to image generation.</li>
+            <li><strong>Force End Voting:</strong> Immediately tallies current votes and jumps to the Results phase.</li>
+            <li><strong>New Session Reset:</strong> Resets game state and room roster at any time.</li>
+        </ul>
+
+        <h3>Safety Filters & Technical Fallbacks</h3>
+        <ul>
+            <li><strong>Moderation Blocked Prompts:</strong> Prompts containing prohibited keywords are excluded from voting letter assignment and render as an <strong>Educational Safety Card</strong> explaining AI moderation rules.</li>
+            <li><strong>Short Prompts (&lt; 2 words):</strong> Disqualifies prompt submission. Mobile controller informs player: <em>"Prompt too short! Minimum 2 words required."</em></li>
+            <li><strong>2K Image Compression Guard:</strong> Automatically downscales large target images (&gt; 5MB) to 2K resolution on server boot.</li>
+        </ul>
+    </section>
+
+    <!-- SECTION 4: SINGLE VANILLA BIG SCREEN WIREFRAME LAYOUT -->
+    <section>
+        <h2>4. Single Vanilla Big Screen Architecture</h2>
+        <p>Conceptual layout for the large demo display screen during the <strong>Lobby Start Phase</strong>:</p>
+
+        <div class="wireframe-container">
+            <div class="wireframe-header">
+                <strong style="color: var(--g-blue);">Are You a Prompting Wizard?</strong>
+                <span class="badge" style="background: rgba(66, 133, 244, 0.2); color: var(--g-blue); padding: 0.2rem 0.6rem; border-radius: 9999px;">LOBBY</span>
+            </div>
+
+            <div class="wireframe-lobby-centerpiece">
+                <div class="wireframe-card" style="border-color: var(--g-blue);">
+                    <h4 style="color: var(--g-blue); margin-bottom: 0.5rem;">PROMINENT QR CODE</h4>
+                    <div style="background: #171717; height: 140px; width: 140px; margin: 0 auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--g-blue);">
+                        [Centerpiece QR]
+                    </div>
+                    <p style="margin-top: 0.5rem;"><small>Scan on mobile to join instantly</small></p>
+                </div>
+
+                <div class="wireframe-card" style="border-color: var(--g-green);">
+                    <h4 style="color: var(--g-green); margin-bottom: 0.5rem;">GALLERY PREVIEW IMAGE</h4>
+                    <div style="background: #171717; height: 140px; width: 140px; margin: 0 auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--g-green);">
+                        [Random Preview]
+                    </div>
+                    <p style="margin-top: 0.5rem;"><small>Start Preview (Not used in game round)</small></p>
+                </div>
+            </div>
+
+            <div style="background: var(--bg-card); padding: 0.75rem 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem;">👥 Joined Wizards: <strong style="color: var(--g-blue);">Wizard #1, Wizard #2</strong></span>
+                <button style="background: var(--g-blue); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700;">🚀 Start Game</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: CLARIFYING QUESTIONS & RESOLUTION LOG -->
+    <section>
+        <h2>5. Design Clarifications & Decision Log</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic / Feature</th>
+                    <th>Initial Specification</th>
+                    <th>Refined Specification & Resolution</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Title & Branding</strong></td>
+                    <td>Generic purple theme.</td>
+                    <td>Official Title: <strong>Are You a Prompting Wizard?</strong><br>Styling: <strong>Google 4-Color Brand Palette</strong> (Blue, Red, Yellow, Green) over Material Dark surface.</td>
+                    <td><span class="tag-resolved">Implemented</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Main Display Layout</strong></td>
+                    <td>Dual-column sidebar split screen.</td>
+                    <td>Simplified to <strong>Single Vanilla Big Screen</strong> with prominent centerpiece QR code + random gallery preview side-by-side.</td>
+                    <td><span class="tag-resolved">Implemented</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Player Check-In & Names</strong></td>
+                    <td>Manual text input for wizard names.</td>
+                    <td>Removed name input. Tap to join automatically assigns <strong>Wizard #1, Wizard #2</strong> in join sequence.</td>
+                    <td><span class="tag-resolved">Implemented</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Target Image Logic</strong></td>
+                    <td>Fixed target image.</td>
+                    <td>Start screen preview image is random. When game starts, a target image is drawn from the collection excluding the start preview.</td>
+                    <td><span class="tag-resolved">Implemented</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Image Performance (&gt;5MB)</strong></td>
+                    <td>Raw 28MB PNG files.</td>
+                    <td>Automated `optimizeLargeImages()` check resizes images &gt; 5MB to <strong>2K resolution (~1.6MB)</strong> on server boot (93% load speed improvement).</td>
+                    <td><span class="tag-resolved">Implemented</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Public Cloud Deployment</strong></td>
+                    <td>Localhost / SSH Tunnels.</td>
+                    <td>Deployed directly to Google Cloud Run at <code>https://art-showdown-557450838719.europe-west3.run.app</code>.</td>
+                    <td><span class="tag-resolved">Deployed</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note-box">
+            <strong>Specification Status:</strong> Fully updated to reflect all latest design refinements, single-screen layout, Google branding system, 2K image optimization, and Cloud Run production deployment.
+        </div>
+    </section>
+
+</body>
+</html>

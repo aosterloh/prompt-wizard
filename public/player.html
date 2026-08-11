@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Are You a Prompting Wizard? - Player Controller</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700;800&family=Inter:wght@400;600;700;800&family=Outfit:wght@700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/player.css">
+</head>
+<body>
+  <div class="mobile-app">
+    <!-- Header with Google Dots & Official Title -->
+    <header class="player-header">
+      <div class="player-brand">
+        <div class="google-dots-sm">
+          <span class="g-dot g-blue"></span>
+          <span class="g-dot g-red"></span>
+          <span class="g-dot g-yellow"></span>
+          <span class="g-dot g-green"></span>
+        </div>
+        <span id="playerBadgeName" class="title">Prompting Wizard</span>
+        <span id="playerRoomBadge" class="player-room-badge">ROOM: #--</span>
+      </div>
+      <div id="playerTimer" class="player-timer">--s</div>
+    </header>
+
+    <!-- Alert Toast -->
+    <div id="toastAlert" class="toast-alert hidden"></div>
+
+    <main class="player-body">
+      <!-- 1. JOIN ROOM -->
+      <section id="viewJoin" class="player-view active">
+        <div class="join-card">
+          <div class="sparkle-icon">🧙‍♂️</div>
+          <h2>WELCOME TO THE SHOWDOWN</h2>
+          <p>Tap below to join as a Prompting Wizard. Recreate the AI Target Image with text prompts!</p>
+          
+          <button id="btnJoin" class="btn-mobile btn-google-blue">
+            🪄 Tap to Join Game
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. LOBBY WAITING -->
+      <section id="viewLobby" class="player-view">
+        <div class="lobby-card">
+          <div class="avatar-large">🧙‍♂️</div>
+          <h3 id="welcomeName">Wizard Check-In</h3>
+          <span class="badge-waiting">In Lobby</span>
+          <p>You are checked in! Look at the main display screen. Waiting for Host to start the game...</p>
+        </div>
+      </section>
+
+      <!-- 3. PROMPTING -->
+      <section id="viewPrompting" class="player-view">
+        <!-- Prominent Mobile Countdown Banner -->
+        <div id="mobileProminentBox" class="mobile-prominent-timer">
+          <div class="timer-top-label">⚡ PROMPTING TIME REMAINING ⚡</div>
+          <div class="timer-countdown-line">
+            <span class="timer-clock-icon">⏰</span>
+            <span id="mobilePromptTimer" class="mobile-timer-digits">60</span>
+            <span class="timer-sec-label">SEC</span>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="card-title-row">
+            <h3>✍️ Craft Your Prompt</h3>
+            <span id="wordCountBadge" class="badge-word-invalid">0 / 3 Min Words</span>
+          </div>
+
+          <textarea id="promptInput" placeholder="Describe colors, lighting, art style, subject details..." rows="4"></textarea>
+
+          <button id="btnSubmitPrompt" class="btn-mobile btn-google-blue" disabled>
+            🚀 Submit Prompt
+          </button>
+
+          <div id="submittedNotice" class="submitted-notice hidden">
+            ✅ Prompt Submitted! Waiting for other wizards...
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. GENERATING -->
+      <section id="viewGenerating" class="player-view">
+        <div class="generating-card">
+          <div class="spinner-mobile"></div>
+          <h3>✨ AI Painting in Progress</h3>
+          <p>Executing parallel text-to-art generation...</p>
+        </div>
+      </section>
+
+      <!-- 5. VOTING -->
+      <section id="viewVoting" class="player-view">
+        <div class="voting-card">
+          <h3>🗳️ Cast Your Vote!</h3>
+          <p>Look at the Main Display and select the letter choice that best recreates the target!</p>
+          
+          <div id="voteButtonsGrid" class="vote-buttons-grid">
+            <!-- Choice buttons A-E -->
+          </div>
+
+          <div id="voteRecordedNotice" class="submitted-notice hidden">
+            ✅ Vote Recorded!
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. RESULTS -->
+      <section id="viewResults" class="player-view">
+        <div class="results-card">
+          <div class="trophy-icon">🏆</div>
+          <h3>Round Complete!</h3>
+          <p>Check the Main Display screen for the winner reveal and full prompt breakdowns!</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/player.js"></script>
+</body>
+</html>

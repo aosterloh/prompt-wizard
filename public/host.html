@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Are You a Prompting Wizard? - Main Display</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700;800&family=Inter:wght@400;600;700;800&family=Outfit:wght@700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <link rel="stylesheet" href="/css/host.css">
+</head>
+<body>
+  <div class="vanilla-container">
+    <!-- Top Google Brand Header -->
+    <header class="google-header">
+      <div class="brand-left">
+        <div class="google-dots-badge">
+          <span class="g-dot g-blue"></span>
+          <span class="g-dot g-red"></span>
+          <span class="g-dot g-yellow"></span>
+          <span class="g-dot g-green"></span>
+        </div>
+        <div>
+          <h1 class="main-title">Are You a Prompting Wizard?</h1>
+          <span class="sub-title">REAL-TIME MULTI-PLAYER AI PROMPT SHOWDOWN</span>
+        </div>
+      </div>
+
+      <!-- Center: Joined Players Counter -->
+      <div class="header-center-roster">
+        <span class="roster-title">👥 Wizards: <span id="playerCount">0</span></span>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="header-right">
+        <span id="roomCodeBadge" class="room-code-badge">ROOM: --</span>
+        <button id="btnRerollShowcase" class="btn-hdr-action btn-reroll" title="Change gallery preview image">🔄 Reroll</button>
+        <button id="btnNewRoom" class="btn-new-room" title="Start a fresh independent game room">➕ New Room</button>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="vanilla-body">
+
+      <!-- 1. LOBBY STAGE SCREEN -->
+      <section id="stageLobby" class="stage-view active">
+        <div class="lobby-hero-grid">
+          <!-- Left: QR Code -->
+          <div class="qr-hero-card">
+            <img id="qrCodeImg" src="" alt="Scan QR Code to Join" class="qr-hero-img" />
+            <div class="qr-url-row">
+              <span id="playerJoinUrl" class="qr-url-text">http://.../player</span>
+              <button id="btnCopyUrl" class="btn-copy-url" title="Copy URL to clipboard">📋 Copy</button>
+            </div>
+          </div>
+
+          <!-- Right: Gallery Preview with Hover Start Button -->
+          <div class="showcase-hero-card">
+            <img id="startShowcaseImg" src="" alt="Showcase Preview Image" class="showcase-img" onerror="this.onerror=null; this.src='/images/target_1.png';" />
+            <span class="qr-url-text">GALLERY PREVIEW</span>
+            <button id="btnStartGame" class="start-game-overlay-btn" disabled>
+              🚀 Start Game
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. PROMPTING STAGE SCREEN -->
+      <section id="stagePrompting" class="stage-view">
+        <!-- Prominent Centerpiece Countdown Header -->
+        <div class="prominent-countdown-container">
+          <div id="prominentCountdownBox" class="prominent-countdown-box">
+            <span class="prominent-countdown-label">⚡ PROMPTING TIME REMAINING ⚡</span>
+            <div class="prominent-timer-display">
+              <span id="prominentTimerValue" class="prominent-timer-number">60</span>
+              <span class="prominent-timer-unit">SEC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Huge Centered Target Benchmark Artwork -->
+        <div class="prompting-hero-center">
+          <div class="huge-target-box">
+            <h2 class="target-title">🎯 TARGET ARTWORK TO RECREATE</h2>
+            <img id="promptingTargetImg" src="" alt="Target Image" class="huge-game-target-img" onerror="this.onerror=null; this.src='/images/target_1.png';" />
+            
+            <!-- Slim Progress Bar Underneath Image -->
+            <div class="slim-progress-wrap">
+              <div class="slim-progress-container">
+                <div id="promptProgressBar" class="slim-progress-fill"></div>
+              </div>
+              <span id="promptProgressText" class="slim-progress-text">0 / 0 Prompts Submitted</span>
+            </div>
+
+            <div style="margin-top: 1rem;">
+              <button id="btnForceEndPrompting" class="btn btn-google-yellow">
+                ⏩ Force End Prompting
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. GENERATING STAGE SCREEN -->
+      <section id="stageGenerating" class="stage-view">
+        <div class="generating-container">
+          <div class="gen-target-box">
+            <span class="gen-target-label">🎯 RECREATING TARGET BENCHMARK:</span>
+            <img id="genTargetImg" src="" alt="Target Benchmark Cat" class="gen-target-img" onerror="this.onerror=null; this.src='/images/target_1.png';" />
+          </div>
+
+          <div class="gen-magic-card">
+            <div class="magic-wand-spinner">🪄</div>
+            <h2>GOOGLE NANO BANANA 2 AI MODEL CONJURING...</h2>
+            <p id="genProgressStatusText">Synthesizing 5 AI artworks in parallel for simulated wizards...</p>
+            
+            <div class="gen-progress-wrapper">
+              <div id="genProgressBarFill" class="gen-progress-bar-fill" style="width: 0%;"></div>
+            </div>
+            <div class="gen-progress-info">
+              <span id="genProgressPct">0% COMPLETE</span>
+              <span id="genProgressCount">0 / 5 Artworks Generated</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. VOTING STAGE SCREEN -->
+      <section id="stageVoting" class="stage-view">
+        <!-- Compact Centered Target Benchmark Header -->
+        <div class="target-center-header">
+          <span class="target-header-label">🎯 TARGET BENCHMARK IMAGE</span>
+          <img id="votingTargetImg" src="" alt="Target Benchmark Image" class="target-center-img" onerror="this.onerror=null; this.src='/images/target_1.png';" />
+        </div>
+
+        <div id="votingGrid" class="artworks-grid">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="stage-actions">
+          <button id="btnForceEndVoting" class="btn btn-google-yellow">
+            ⏩ Force End Voting
+          </button>
+        </div>
+      </section>
+
+      <!-- 4.5 TIEBREAK STAGE SCREEN -->
+      <section id="stageTieBreak" class="stage-view">
+        <div class="tiebreak-hero-container">
+          <div class="tiebreak-card">
+            <div class="tiebreak-sparkle">⚖️✨</div>
+            <h2 class="tiebreak-title">WE HAVE A TIE!</h2>
+            <p class="tiebreak-subtitle">Let's ask the AI who is the winner. Stay tuned...</p>
+            <div class="spinner-large"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. RESULTS STAGE SCREEN -->
+      <section id="stageResults" class="stage-view">
+        <div class="results-container">
+          <!-- Top Row: Side-by-Side Target Image + Winner / AI Tiebreaker Card -->
+          <div class="results-top-row">
+            <!-- Left: Target Benchmark Image -->
+            <div class="results-target-card">
+              <span class="target-header-label">🎯 TARGET BENCHMARK IMAGE</span>
+              <img id="resultsTargetImg" src="" alt="Target Benchmark Image" class="results-target-img" onerror="this.onerror=null; this.src='/images/target_1.png';" />
+            </div>
+
+            <!-- Right: Winner Spotlight & AI Explainer -->
+            <div id="winnerSpotlight" class="winner-spotlight">
+              <!-- Winner spotlight rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Bottom Row: Player Artworks Submissions Grid -->
+          <div id="resultsGrid" class="results-grid">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Action Button floating at bottom right -->
+          <div class="results-actions">
+            <button id="btnResetSession" class="btn btn-google-green btn-lg">
+              🔄 Play Next Round
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/host.js"></script>
+</body>
+</html>
