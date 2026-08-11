@@ -453,14 +453,12 @@ function playCountdownBeep(secondsLeft) {
   }
 }
 
-// Render Voting Grid A-E
+// Render Voting Grid A-E (Unbiased: pure artwork cards without AI badges or scores during voting)
 function renderVotingGrid(artworks) {
   if (!artworks || artworks.length === 0) {
     votingGrid.innerHTML = `<p style="color: var(--text-muted);">No artwork submissions to vote on.</p>`;
     return;
   }
-
-  const maxAiScore = Math.max(...artworks.map(a => a.aiScore || 0));
 
   votingGrid.innerHTML = artworks.map(art => {
     if (!art.safe) {
@@ -475,18 +473,9 @@ function renderVotingGrid(artworks) {
       `;
     }
 
-    const isAiPick = latestAiJudgeResult && latestAiJudgeResult.winningLetter === art.letter;
-    const isTopScore = art.aiScore && art.aiScore === maxAiScore && maxAiScore > 0;
-
     return `
-      <div class="art-card ${isAiPick ? 'ai-pick-border' : ''}">
+      <div class="art-card">
         <div class="art-letter-badge">${art.letter}</div>
-        ${typeof art.aiScore === 'number' ? `
-          <div class="ai-score-badge ${isTopScore ? 'highest-ai-score' : ''}">
-            🎯 AI Score: ${art.aiScore}/100
-          </div>
-        ` : ''}
-        ${isAiPick ? `<div class="ai-pick-chip">🤖 AI JUDGE PICK</div>` : ''}
         <img src="${art.imageUri}" alt="Choice ${art.letter}" class="art-img" />
       </div>
     `;

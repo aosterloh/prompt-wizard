@@ -475,14 +475,17 @@ async function transitionToResults(room) {
   clearTimer(room);
 
   const voteTallies = {};
-  room.players.forEach(p => {
-    if (p.vote) {
-      voteTallies[p.vote] = (voteTallies[p.vote] || 0) + 1;
-    }
-  });
+  if (Array.isArray(room.players)) {
+    room.players.forEach(p => {
+      if (p.vote) {
+        voteTallies[p.vote] = (voteTallies[p.vote] || 0) + 1;
+      }
+    });
+  }
 
   let maxVotes = -1;
-  room.generatedArtworks.forEach(art => {
+  const artworks = Array.isArray(room.generatedArtworks) ? room.generatedArtworks : [];
+  artworks.forEach(art => {
     art.votesCount = voteTallies[art.letter] || 0;
     if (art.safe && art.votesCount > maxVotes) {
       maxVotes = art.votesCount;
@@ -490,14 +493,14 @@ async function transitionToResults(room) {
   });
 
   if (maxVotes > 0) {
-    room.winningArtworks = room.generatedArtworks.filter(
+    room.winningArtworks = artworks.filter(
       art => art.safe && art.votesCount === maxVotes
     );
-  } else if (room.generatedArtworks.length > 0) {
-    const safeArts = room.generatedArtworks.filter(a => a.safe);
-    if (safeArts.length > 0) {
-      room.winningArtworks = [safeArts[0]];
-    }
+  } else if (artworks.length > 0) {
+    const safeArts = artworks.filter(a => a.safe);
+    room.winningArtworks = safeArts.length > 0 ? [safeArts[0]] : [artworks[0]];
+  } else {
+    room.winningArtworks = [];
   }
 
   // Check if there is a TIE for top votes
@@ -588,7 +591,7 @@ io.on("connection", (socket) => {
     const code = (roomCode || socket.roomCode || "WIZARD").toUpperCase();
     const room = roomsMap.get(code);
     if (room && room.gameState === "VOTING") {
-      transitionToResults(room);
+      transitionToResults(room).catch(err => console.error("Error in forceEndVoting:", err));
     }
   });
 
@@ -648,11 +651,7 @@ io.on("connection", (socket) => {
 
     // Auto-start game automatically when 5 players have joined!
     if (room.gameState === "LOBBY" && room.players.length >= 5) {
-      setTimeout(() => {
-        if (room.gameState === "LOBBY" && room.players.length >= 5) {
-          transitionToPrompting(room);
-        }
-      }, 300);
+      transitionToPrompting(room);
     }
   });
 
@@ -670,12 +669,15 @@ io.on("connection", (socket) => {
     broadcastState(code);
   });
 
-  socket.on("player:submitPrompt", ({ roomCode, promptText }) => {
+  socket.on("player:submitPrompt", ({ roomCode, promptText, playerId }) => {
     const code = (roomCode || socket.roomCode || "WIZARD").toUpperCase();
     const room = roomsMap.get(code);
     if (!room || room.gameState !== "PROMPTING") return;
 
-    const player = room.players.find(p => p.socketId === socket.id);
+    let player = room.players.find(p => p.socketId === socket.id);
+    if (!player && playerId) {
+      player = room.players.find(p => p.id === playerId);
+    }
     if (!player) return;
 
     const words = (promptText || "").trim().split(/\s+/).filter(Boolean);
@@ -700,27 +702,37 @@ io.on("connection", (socket) => {
 
     broadcastState(code);
 
-    const allSubmitted = room.players.every(p => p.isSubmitted);
+    const activePlayers = room.players.filter(p => p.isSubmitted || p.prompt);
+    const targetPlayers = activePlayers.length > 0 ? activePlayers : room.players;
+    const allSubmitted = targetPlayers.length > 0 && targetPlayers.every(p => p.isSubmitted);
     if (allSubmitted) {
       transitionToGenerating(room);
     }
   });
 
-  socket.on("player:vote", ({ roomCode, letter }) => {
+  socket.on("player:vote", ({ roomCode, letter, playerId }) => {
     const code = (roomCode || socket.roomCode || "WIZARD").toUpperCase();
     const room = roomsMap.get(code);
     if (!room || room.gameState !== "VOTING") return;
 
-    const player = room.players.find(p => p.socketId === socket.id);
+    let player = room.players.find(p => p.socketId === socket.id);
+    if (!player && playerId) {
+      player = room.players.find(p => p.id === playerId);
+    }
     if (!player) return;
 
     player.vote = letter;
     socket.emit("player:voteRecorded", { letter });
+
+    // Filter active participating players who submitted a prompt this round
+    const activePlayers = room.players.filter(p => p.isSubmitted || p.prompt);
+    const targetGroup = activePlayers.length > 0 ? activePlayers : room.players;
+
     broadcastState(code);
 
-    const allVoted = room.players.every(p => !!p.vote);
+    const allVoted = targetGroup.length > 0 && targetGroup.every(p => !!p.vote);
     if (allVoted) {
-      transitionToResults(room);
+      transitionToResults(room).catch(err => console.error("Error transitioning to results:", err));
     }
   });
 
