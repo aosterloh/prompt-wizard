@@ -98,9 +98,22 @@ app.get("/join", (req, res) => res.redirect("/player"));
 // Dynamic QR Code Generator for specific Room Code
 app.get("/api/qr", async (req, res) => {
   const code = (req.query.room || "WIZARD").toUpperCase();
-  const hostHeader = req.headers.host || `localhost:${PORT}`;
-  const protocol = req.headers["x-forwarded-proto"] || "http";
-  const playerUrl = `${protocol}://${hostHeader}/player?room=${code}`;
+  const referer = req.headers.referer || "";
+  let playerUrl;
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      refUrl.pathname = refUrl.pathname.replace(/\/host(\.html)?$/i, "/player");
+      refUrl.searchParams.set("room", code);
+      playerUrl = refUrl.href;
+    } catch (e) {}
+  }
+  if (!playerUrl) {
+    const hostHeader = req.headers.host || `localhost:${PORT}`;
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    playerUrl = `${protocol}://${hostHeader}/player?room=${code}`;
+  }
+
   try {
     const qrUri = await QRCode.toDataURL(playerUrl, {
       margin: 1,

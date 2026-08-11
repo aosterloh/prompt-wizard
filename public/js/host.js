@@ -118,18 +118,39 @@ socket.on("room:aiJudgeResult", (result) => {
 
 // Register Host for specific Room Code
 socket.emit("host:register", { roomCode });
-// Fetch QR Code for specific Room Code
-async function loadQrCode(targetCode) {
-  const code = (targetCode || roomCode || "WIZARD").toUpperCase();
+// Derive exact Player Join URL from Host URL by replacing '/host' with '/player'
+function getPlayerJoinUrl() {
+  let currentUrl = window.location.href;
+  let urlObj;
   try {
-    const res = await fetch(`/api/qr?room=${encodeURIComponent(code)}`);
+    urlObj = new URL(currentUrl);
+  } catch (e) {
+    urlObj = new URL(currentUrl, window.location.origin);
+  }
+  urlObj.pathname = urlObj.pathname.replace(/\/host(\.html)?$/i, "/player");
+  if (!urlObj.searchParams.has("room")) {
+    urlObj.searchParams.set("room", roomCode);
+  }
+  return urlObj.href;
+}
+
+// Fetch QR Code & Render URL Display
+async function loadQrCode(targetCode) {
+  const playerUrl = getPlayerJoinUrl();
+  if (playerJoinUrl) {
+    playerJoinUrl.textContent = playerUrl;
+  }
+  if (qrCodeImg) {
+    qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(playerUrl)}`;
+  }
+  try {
+    const res = await fetch(`/api/qr?room=${encodeURIComponent(targetCode || roomCode)}`);
     const data = await res.json();
     if (data.qrUri && qrCodeImg) {
       qrCodeImg.src = data.qrUri;
-      if (playerJoinUrl) playerJoinUrl.textContent = data.playerUrl;
     }
   } catch (err) {
-    console.error("Failed to load QR code:", err);
+    console.error("Failed to load server QR code:", err);
   }
 }
 loadQrCode(roomCode);
@@ -169,7 +190,23 @@ socket.on("room:timerUpdate", ({ timer }) => {
   }
 });
 
-let showcaseImagesList = [];
+let showcaseImagesList = [
+  "/images/target_1.png",
+  "/images/target_2.png",
+  "/images/target_3.png",
+  "/images/target_4.png",
+  "/images/target_5.png",
+  "/images/target_6.png",
+  "/images/target_7.png",
+  "/images/target_8.png",
+  "/images/target_9.png",
+  "/images/target_10.png",
+  "/images/target_11.png",
+  "/images/target_12.png",
+  "/images/target_13.png",
+  "/images/target_14.png",
+  "/images/target_15.png"
+];
 let showcaseIndex = 0;
 
 // Automated 2-Second Showcase Image Rotation in Lobby
@@ -180,17 +217,36 @@ setInterval(() => {
   }
 }, 2000);
 
+function fallbackCopyText(textToCopy) {
+  const input = document.createElement("input");
+  input.value = textToCopy;
+  document.body.appendChild(input);
+  input.select();
+  try {
+    document.execCommand("copy");
+    if (btnCopyUrl) btnCopyUrl.textContent = "✓ Copied!";
+    setTimeout(() => { if (btnCopyUrl) btnCopyUrl.textContent = "📋 Copy"; }, 2000);
+  } catch (e) {
+    console.error("Fallback copy error:", e);
+  }
+  document.body.removeChild(input);
+}
+
 // Event Listeners for Host Controls with roomCode payload
 const btnCopyUrl = document.getElementById("btnCopyUrl");
 if (btnCopyUrl && playerJoinUrl) {
   btnCopyUrl.addEventListener("click", () => {
     const textToCopy = playerJoinUrl.textContent;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      btnCopyUrl.textContent = "✓ Copied!";
-      setTimeout(() => { btnCopyUrl.textContent = "📋 Copy"; }, 2000);
-    }).catch(err => {
-      console.error("Copy error:", err);
-    });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        btnCopyUrl.textContent = "✓ Copied!";
+        setTimeout(() => { btnCopyUrl.textContent = "📋 Copy"; }, 2000);
+      }).catch(err => {
+        fallbackCopyText(textToCopy);
+      });
+    } else {
+      fallbackCopyText(textToCopy);
+    }
   });
 }
 
@@ -241,11 +297,9 @@ function updateUI(data) {
   }
 
   if (Array.isArray(allLocalImages) && allLocalImages.length > 0) {
-    showcaseImagesList = allLocalImages.filter(img => /\/target.*\.png$/i.test(img));
-    if (startShowcaseImg && (!startShowcaseImg.src || startShowcaseImg.src === location.href || startShowcaseImg.src.includes("cat_artwork"))) {
-      if (showcaseImagesList.length > 0) {
-        startShowcaseImg.src = encodeURI(showcaseImagesList[showcaseIndex] || showcaseImagesList[0]);
-      }
+    const filtered = allLocalImages.filter(img => /\/target.*\.png$/i.test(img));
+    if (filtered.length > 0) {
+      showcaseImagesList = filtered;
     }
   }
 
