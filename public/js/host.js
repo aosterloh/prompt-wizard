@@ -57,6 +57,8 @@ let currentGameState = "LOBBY";
 let audioCtx = null;
 let lastBeepedSec = null;
 
+let countdownJingleAudio = null;
+
 // Unlocks browser Web Audio API policy on user interaction (click/tap anywhere on host screen)
 function initAudio() {
   try {
@@ -66,9 +68,20 @@ function initAudio() {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+    if (!countdownJingleAudio) {
+      countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
+      countdownJingleAudio.volume = 0.95;
+    }
+    // Unlock HTML5 Audio playback on user click gesture
+    countdownJingleAudio.play().then(() => {
+      countdownJingleAudio.pause();
+      countdownJingleAudio.currentTime = 0;
+      console.log("🔊 HTML5 Countdown MP3 Audio successfully unlocked!");
+    }).catch(e => console.warn("Audio unlock catch:", e));
+
     const banner = document.getElementById("soundUnlockBanner");
     if (banner) {
-      banner.textContent = "🔊 GAME AUDIO ACTIVE — 10S COUNTDOWN MUSIC & SOUND FX READY";
+      banner.textContent = "🔊 GAME AUDIO ACTIVE — 10S COUNTDOWN MUSIC JINGLE READY";
       banner.classList.add("unlocked");
     }
     const btnToggle = document.getElementById("btnToggleSound");
@@ -77,6 +90,40 @@ function initAudio() {
     }
   } catch (e) {}
 }
+
+function playCountdownJingleMP3() {
+  try {
+    initAudio();
+    if (!countdownJingleAudio) {
+      countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
+      countdownJingleAudio.volume = 0.95;
+    }
+    countdownJingleAudio.currentTime = 0;
+    const playPromise = countdownJingleAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log("🎵 Playing 10-second countdown music jingle MP3 from host screen!");
+      }).catch(err => {
+        console.warn("MP3 playback error, falling back to Web Audio synth:", err);
+      });
+    }
+    // Play Web Audio synth alarm ticks in parallel for 100% audio guarantee
+    playCountdownMusic(10);
+  } catch (err) {
+    console.error("Countdown jingle play error:", err);
+    playCountdownMusic(10);
+  }
+}
+
+function stopCountdownJingleMP3() {
+  if (countdownJingleAudio) {
+    try {
+      countdownJingleAudio.pause();
+      countdownJingleAudio.currentTime = 0;
+    } catch (e) {}
+  }
+}
+
 window.addEventListener('click', initAudio);
 window.addEventListener('touchstart', initAudio);
 window.addEventListener('keydown', initAudio);
@@ -214,7 +261,11 @@ socket.on("room:timerUpdate", ({ timer }) => {
     if (prominentCountdownBox) prominentCountdownBox.classList.add("urgent-prominent");
     if (currentGameState === "PROMPTING" && lastBeepedSec !== timer) {
       lastBeepedSec = timer;
-      playCountdownMusic(timer);
+      if (timer === 10) {
+        playCountdownJingleMP3();
+      } else {
+        playCountdownMusic(timer);
+      }
     }
   } else {
     if (timerValue) timerValue.classList.remove("timer-urgent");
@@ -313,7 +364,21 @@ if (btnForceEndVoting) {
 
 if (btnResetSession) {
   btnResetSession.addEventListener("click", () => {
+    showAiScores = false;
+    if (btnToggleAiScores) btnToggleAiScores.textContent = "🤖 AI Score";
     socket.emit("host:resetSession", { roomCode });
+  });
+}
+
+let showAiScores = false;
+const btnToggleAiScores = document.getElementById("btnToggleAiScores");
+if (btnToggleAiScores) {
+  btnToggleAiScores.addEventListener("click", () => {
+    showAiScores = !showAiScores;
+    btnToggleAiScores.textContent = showAiScores ? "🙈 Hide AI Scores" : "🤖 AI Score";
+    if (window.lastGeneratedArtworks && window.lastWinningArtworks) {
+      renderResultsGrid(window.lastGeneratedArtworks, window.lastWinningArtworks, window.lastIsTie);
+    }
   });
 }
 
@@ -509,6 +574,7 @@ function playCountdownMusic(secondsLeft) {
 
   if (gameState === "LOBBY") {
     lastBeepedSec = null;
+    stopCountdownJingleMP3();
     if (stageLobby) stageLobby.classList.add("active");
   } else if (gameState === "PROMPTING") {
     if (stagePrompting) stagePrompting.classList.add("active");
@@ -518,14 +584,22 @@ function playCountdownMusic(secondsLeft) {
       // Play 10-second countdown game music theme
       if (data.timer <= 10 && data.timer > 0 && lastBeepedSec !== data.timer) {
         lastBeepedSec = data.timer;
-        playCountdownMusic(data.timer);
+        if (data.timer === 10) {
+          playCountdownJingleMP3();
+        } else {
+          playCountdownMusic(data.timer);
+        }
       }
     }
     const submittedCount = players.filter(p => p.isSubmitted).length;
     const pct = players.length > 0 ? (submittedCount / players.length) * 100 : 0;
     if (promptProgressBar) promptProgressBar.style.width = `${pct}%`;
     if (promptProgressText) promptProgressText.textContent = `${submittedCount} / ${players.length} Prompts Submitted`;
-  } else if (gameState === "GENERATING") {
+  } else {
+    stopCountdownJingleMP3();
+  }
+
+  if (gameState === "GENERATING") {
     lastBeepedSec = null;
     if (stageGenerating) stageGenerating.classList.add("active");
     if (genProgressBarFill) genProgressBarFill.style.width = `${genProgressPct}%`;
@@ -577,7 +651,19 @@ function renderVotingGrid(artworks) {
 
 // Render Results Grid & Winner Spotlight
 function renderResultsGrid(artworks, winners, isTie) {
-  const hasAiReasoning = latestAiJudgeResult && latestAiJudgeResult.reasoning;
+  window.lastIsTie = isTie;
+
+  // Toggle button visibility for non-tie results
+  if (btnToggleAiScores) {
+    if (!isTie) {
+      btnToggleAiScores.classList.remove("hidden");
+    } else {
+      btnToggleAiScores.classList.add("hidden");
+    }
+  }
+
+  const revealScores = isTie || showAiScores;
+  const hasAiReasoning = revealScores && latestAiJudgeResult && latestAiJudgeResult.reasoning;
 
   if (winners && winners.length > 0) {
     winnerSpotlight.style.display = "flex";
@@ -595,7 +681,7 @@ function renderResultsGrid(artworks, winners, isTie) {
         </div>
         ${hasAiReasoning ? `
           <div class="ai-explainer-box">
-            🤖 <strong>AI Judge Rationale:</strong> ${latestAiJudgeResult.reasoning}
+            🤖 <strong>AI Similarity Rationale:</strong> ${latestAiJudgeResult.reasoning}
           </div>
         ` : ''}
       </div>
@@ -625,7 +711,7 @@ function renderResultsGrid(artworks, winners, isTie) {
         <div class="results-card-header">
           <strong style="color: white; font-size: 1.1rem; font-weight: 800;">${art.playerName}</strong>
           ${isAiPick && isTie ? `<span class="ai-pick-chip-sm">⚖️ AI TIE-BREAKER</span>` : ''}
-          ${typeof art.aiScore === 'number' ? `
+          ${revealScores && typeof art.aiScore === 'number' ? `
             <span class="ai-score-badge-sm ${isTopScore ? 'highest-ai-score' : ''}">
               🎯 ${art.aiScore}/100
             </span>
