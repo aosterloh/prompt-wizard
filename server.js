@@ -26,6 +26,8 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/docs", express.static(path.join(__dirname, "docs")));
+app.get("/spec", (req, res) => res.sendFile(path.join(__dirname, "docs", "design_specification.html")));
 app.use(express.json());
 
 // In-Memory Multi-Room Store

@@ -1306,3 +1306,30 @@ body {
   justify-content: flex-end;
   margin-top: 1rem;
 }
+
+/* Hidden Specification Link Lower Right */
+.hidden-spec-link {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  z-index: 9999;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.25);
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.hidden-spec-link:hover {
+  color: #ffffff;
+  background: rgba(66, 133, 244, 0.7);
+  border-color: rgba(66, 133, 244, 0.9);
+  box-shadow: 0 0 15px rgba(66, 133, 244, 0.5);
+  transform: translateY(-2px);
+}
