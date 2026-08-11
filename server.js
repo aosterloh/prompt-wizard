@@ -702,9 +702,7 @@ io.on("connection", (socket) => {
 
     broadcastState(code);
 
-    const activePlayers = room.players.filter(p => p.isSubmitted || p.prompt);
-    const targetPlayers = activePlayers.length > 0 ? activePlayers : room.players;
-    const allSubmitted = targetPlayers.length > 0 && targetPlayers.every(p => p.isSubmitted);
+    const allSubmitted = room.players.length > 0 && room.players.every(p => p.isSubmitted);
     if (allSubmitted) {
       transitionToGenerating(room);
     }
