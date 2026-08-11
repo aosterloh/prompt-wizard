@@ -54,6 +54,8 @@ const winnerSpotlight = document.getElementById("winnerSpotlight");
 const resultsGrid = document.getElementById("resultsGrid");
 
 let currentGameState = "LOBBY";
+let audioCtx = null;
+let lastBeepedSec = null;
 
 // Update Room Badge Display
 if (roomCodeBadge) {
@@ -118,6 +120,7 @@ socket.on("room:aiJudgeResult", (result) => {
 
 // Register Host for specific Room Code
 socket.emit("host:register", { roomCode });
+
 // Derive exact Player Join URL from Host URL by replacing '/host' with '/player'
 function getPlayerJoinUrl() {
   let currentUrl = window.location.href;
@@ -141,7 +144,12 @@ async function loadQrCode(targetCode) {
     playerJoinUrl.textContent = playerUrl;
   }
   if (qrCodeImg) {
-    qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(playerUrl)}`;
+    if (typeof window.generateClientQrDataUri === 'function') {
+      const clientQrDataUri = window.generateClientQrDataUri(playerUrl);
+      if (clientQrDataUri) {
+        qrCodeImg.src = clientQrDataUri;
+      }
+    }
   }
   try {
     const res = await fetch(`/api/qr?room=${encodeURIComponent(targetCode || roomCode)}`);
@@ -359,9 +367,6 @@ function updateUI(data) {
   }
 
 // Web Audio API Game Countdown Synthesizer
-let audioCtx = null;
-let lastBeepedSec = null;
-
 function playCountdownBeep(secondsLeft) {
   try {
     if (!audioCtx) {
