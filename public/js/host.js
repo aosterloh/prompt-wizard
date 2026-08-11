@@ -190,7 +190,7 @@ socket.on("room:timerUpdate", ({ timer }) => {
     if (prominentCountdownBox) prominentCountdownBox.classList.add("urgent-prominent");
     if (currentGameState === "PROMPTING" && lastBeepedSec !== timer) {
       lastBeepedSec = timer;
-      playCountdownBeep(timer);
+      playCountdownMusic(timer);
     }
   } else {
     if (timerValue) timerValue.classList.remove("timer-urgent");
@@ -376,8 +376,8 @@ function updateUI(data) {
     btnStartGame.textContent = players.length >= 2 ? "🚀 Start Game" : "Waiting for Players (Min 2)";
   }
 
-// Web Audio API Game Countdown Synthesizer
-function playCountdownBeep(secondsLeft) {
+// Web Audio API Retro Arcade Game Countdown Music Synthesizer
+function playCountdownMusic(secondsLeft) {
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -386,26 +386,57 @@ function playCountdownBeep(secondsLeft) {
       audioCtx.resume();
     }
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const now = audioCtx.currentTime;
 
-    osc.type = 'sine';
-    
-    // Pitch escalates for final 3 seconds
-    const frequency = secondsLeft <= 3 ? 880 : (secondsLeft <= 5 ? 660 : 440);
-    osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+    // 1. Rhythmic Sub-Bass Pulse (sawtooth bass synth)
+    const bassOsc = audioCtx.createOscillator();
+    const bassGain = audioCtx.createGain();
+    bassOsc.type = 'sawtooth';
+    const bassFreq = secondsLeft <= 3 ? 164.81 : (secondsLeft <= 5 ? 146.83 : 110.00); // E3, D3, A2
+    bassOsc.frequency.setValueAtTime(bassFreq, now);
 
-    // Beep envelope (0.15s duration with clean decay)
-    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    bassGain.gain.setValueAtTime(0.25, now);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    bassOsc.connect(bassGain);
+    bassGain.connect(audioCtx.destination);
+    bassOsc.start(now);
+    bassOsc.stop(now + 0.25);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.15);
+    // 2. Escalating 4-Note Retro Game Arpeggio Melody
+    let arpNotes;
+    if (secondsLeft <= 3) {
+      // Climax high-tension notes (A5, C#6, E6, A6)
+      arpNotes = [880.00, 1108.73, 1318.51, 1760.00];
+    } else if (secondsLeft <= 5) {
+      // Medium pitch escalation (E4, G#4, B4, E5)
+      arpNotes = [329.63, 415.30, 493.88, 659.25];
+    } else {
+      // Starting game countdown rhythm (A4, C#5, E5, A5)
+      arpNotes = [440.00, 554.37, 659.25, 880.00];
+    }
+
+    const stepDuration = secondsLeft <= 3 ? 0.06 : (secondsLeft <= 5 ? 0.08 : 0.10);
+
+    arpNotes.forEach((freq, index) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + (index * stepDuration));
+
+      gain.gain.setValueAtTime(0.3, now + (index * stepDuration));
+      gain.gain.exponentialRampToValueAtTime(0.001, now + (index * stepDuration) + 0.12);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now + (index * stepDuration));
+      osc.stop(now + (index * stepDuration) + 0.12);
+    });
+
   } catch (err) {
-    console.error("Audio countdown error:", err);
+    console.error("Game countdown music error:", err);
   }
 }
 
@@ -422,10 +453,10 @@ function playCountdownBeep(secondsLeft) {
     if (prominentTimerValue && typeof data.timer === "number" && data.timer >= 0) {
       prominentTimerValue.textContent = `${data.timer}`;
 
-      // Play 10-second countdown game beep sound
+      // Play 10-second countdown game music theme
       if (data.timer <= 10 && data.timer > 0 && lastBeepedSec !== data.timer) {
         lastBeepedSec = data.timer;
-        playCountdownBeep(data.timer);
+        playCountdownMusic(data.timer);
       }
     }
     const submittedCount = players.filter(p => p.isSubmitted).length;
