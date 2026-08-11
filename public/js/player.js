@@ -52,6 +52,14 @@ socket.on("connect", () => {
 
 socket.on("player:error", (msg) => {
   showToast(msg);
+  if (msg.includes("does not exist") || msg.includes("expired")) {
+    if (viewJoin) switchView(viewJoin);
+  }
+});
+
+socket.on("room:expired", ({ roomCode }) => {
+  showToast(`⚠️ Host Room #${roomCode} has expired after 5 minutes.`);
+  if (viewJoin) switchView(viewJoin);
 });
 
 // Joined Success handler

@@ -43,13 +43,29 @@ function generateRoomCode() {
   return code;
 }
 
-// Get existing room or create a fresh room instance
+// Get existing room or create a fresh room instance (with 5-minute host expiration)
 function getOrCreateRoom(code) {
   const cleanCode = (code || "WIZARD").toUpperCase().trim();
-  if (!roomsMap.has(cleanCode)) {
+  let room = roomsMap.get(cleanCode);
+
+  // Check if existing room has expired (5-minute TTL)
+  if (room && (room.isExpired || Date.now() >= room.expiresAt)) {
+    if (room.timerInterval) clearInterval(room.timerInterval);
+    if (room.expirationTimeout) clearTimeout(room.expirationTimeout);
+    roomsMap.delete(cleanCode);
+    room = null;
+  }
+
+  if (!room) {
     const initialShowcaseImg = pickStartShowcaseImage();
-    roomsMap.set(cleanCode, {
+    const createdAt = Date.now();
+    const expiresAt = createdAt + (5 * 60 * 1000); // Host code expires 5 minutes after generation
+
+    room = {
       roomCode: cleanCode,
+      createdAt,
+      expiresAt,
+      isExpired: false,
       gameState: "LOBBY",
       startShowcaseImage: initialShowcaseImg,
       currentTargetImage: null,
@@ -62,10 +78,26 @@ function getOrCreateRoom(code) {
       timerInterval: null,
       genProgressPct: 0,
       genCompletedCount: 0,
-      genTotalCount: 5
-    });
+      genTotalCount: 5,
+      expirationTimeout: null
+    };
+
+    // Auto-expire room 5 minutes after generation if inactive in LOBBY
+    room.expirationTimeout = setTimeout(() => {
+      const current = roomsMap.get(cleanCode);
+      if (current && current.gameState === "LOBBY") {
+        console.log(`⏰ [Room ${cleanCode}] Host code expired 5 minutes after generation.`);
+        current.isExpired = true;
+        io.to(cleanCode).emit("player:error", `⚠️ Room #${cleanCode} has expired (5-minute host limit reached).`);
+        io.to(cleanCode).emit("room:expired", { roomCode: cleanCode });
+        if (current.timerInterval) clearInterval(current.timerInterval);
+        roomsMap.delete(cleanCode);
+      }
+    }, 5 * 60 * 1000);
+
+    roomsMap.set(cleanCode, room);
   }
-  return roomsMap.get(cleanCode);
+  return room;
 }
 
 // HTTP Routes
@@ -81,16 +113,35 @@ app.get("/host", (req, res) => {
     }
     return res.redirect(`/host?room=${newCode}`);
   }
+  getOrCreateRoom(room);
   res.sendFile(path.join(__dirname, "public", "host.html"));
 });
 
-// Player route: auto-redirects to a unique room URL matching the active session
+// Helper to filter valid, non-expired host rooms
+function getValidHostRooms() {
+  return Array.from(roomsMap.keys()).filter(k => {
+    const r = roomsMap.get(k);
+    return r && !r.isExpired && Date.now() < r.expiresAt;
+  });
+}
+
+// Player route: auto-redirects ONLY to active, non-expired host rooms
 app.get("/player", (req, res) => {
   let room = req.query.room;
+  const validRooms = getValidHostRooms();
+
   if (!room) {
-    let activeRooms = Array.from(roomsMap.keys());
-    let code = activeRooms.length > 0 ? activeRooms[0] : generateRoomCode();
-    return res.redirect(`/player?room=${code}`);
+    if (validRooms.length > 0) {
+      return res.redirect(`/player?room=${validRooms[0]}`);
+    }
+  } else {
+    const cleanCode = room.toUpperCase().trim();
+    const existing = roomsMap.get(cleanCode);
+    if (!existing || existing.isExpired || Date.now() >= existing.expiresAt) {
+      if (validRooms.length > 0) {
+        return res.redirect(`/player?room=${validRooms[0]}`);
+      }
+    }
   }
   res.sendFile(path.join(__dirname, "public", "player.html"));
 });
@@ -600,11 +651,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("player:join", ({ roomCode }) => {
-    const code = (roomCode || "WIZARD").toUpperCase();
+    const code = (roomCode || "").toUpperCase().trim();
+    const room = roomsMap.get(code);
+
+    // Enforce that players cannot enter a room with a code that is not currently an active, non-expired host code
+    if (!room || room.isExpired || Date.now() >= room.expiresAt) {
+      socket.emit("player:error", `⚠️ Room #${code || "UNKNOWN"} does not exist or has expired! Please scan the active host QR code.`);
+      return;
+    }
+
     socket.join(code);
     socket.roomCode = code;
-
-    const room = getOrCreateRoom(code);
 
     if (room.gameState !== "LOBBY" && room.gameState !== "PROMPTING") {
       socket.emit("player:error", "Game is currently in progress. Please wait for the next round!");
