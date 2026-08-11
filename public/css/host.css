@@ -141,6 +141,39 @@ body {
   gap: 0.75rem;
 }
 
+.wizards-counter-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(66, 133, 244, 0.25), rgba(168, 85, 247, 0.25));
+  border: 2px solid var(--g-blue);
+  padding: 0.45rem 1.25rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.wizards-counter-label {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.wizards-counter-num {
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: var(--g-yellow);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.1rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 188, 4, 0.6);
+  box-shadow: 0 0 10px rgba(251, 188, 4, 0.3);
+  line-height: 1;
+}
+
 .room-code-badge {
   background: rgba(139, 92, 246, 0.2);
   color: #c084fc;
