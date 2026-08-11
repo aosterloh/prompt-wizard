@@ -368,12 +368,17 @@ function updateUI(data) {
   }
 
   // Player Counter
-  if (playerCount) playerCount.textContent = `${players.length}`;
+  const count = (players && Array.isArray(players)) ? players.length : 0;
+  if (playerCount) playerCount.textContent = `${count}`;
 
   // Start Button state (Hovering over Gallery Preview)
   if (btnStartGame) {
-    btnStartGame.disabled = players.length < 2;
-    btnStartGame.textContent = players.length >= 2 ? "🚀 Start Game" : "Waiting for Players (Min 2)";
+    btnStartGame.disabled = count < 1;
+    if (count === 0) {
+      btnStartGame.textContent = "Waiting for Players to Join...";
+    } else {
+      btnStartGame.textContent = `🚀 Start Game (${count} ${count === 1 ? 'Wizard' : 'Wizards'} Joined)`;
+    }
   }
 
 // Web Audio API Retro Arcade Game Countdown Music Synthesizer

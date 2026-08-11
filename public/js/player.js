@@ -46,6 +46,8 @@ let myVote = null;
 // Socket Listeners
 socket.on("connect", () => {
   console.log(`Connected to Wizard server for Room #${roomCode}`);
+  // Auto-join room on connection so host detects players immediately
+  socket.emit("player:join", { roomCode });
 });
 
 socket.on("player:error", (msg) => {
