@@ -144,6 +144,79 @@ promptInput.addEventListener("input", () => {
   socket.emit("player:updatePrompt", { roomCode, promptText: text });
 });
 
+// Speech-to-Text Voice Input Dictation (Google STT / Web Speech API)
+const btnVoiceInput = document.getElementById("btnVoiceInput");
+const voiceInputText = document.getElementById("voiceInputText");
+let recognition = null;
+let isListening = false;
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition && btnVoiceInput) {
+  try {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      isListening = true;
+      if (btnVoiceInput) btnVoiceInput.classList.add("listening");
+      if (voiceInputText) voiceInputText.textContent = "🔴 Listening... Speak now!";
+      showToast("🎙️ Google STT Listening... Speak your prompt!");
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      if (promptInput && transcript.trim()) {
+        promptInput.value = transcript;
+        promptInput.dispatchEvent(new Event("input"));
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn("Speech recognition error:", event.error);
+      if (event.error !== 'no-speech') {
+        showToast(`🎙️ Voice error: ${event.error}`);
+      }
+      stopListening();
+    };
+
+    recognition.onend = () => {
+      stopListening();
+    };
+
+    function stopListening() {
+      isListening = false;
+      if (btnVoiceInput) btnVoiceInput.classList.remove("listening");
+      if (voiceInputText) voiceInputText.textContent = "🎙️ Speak Prompt (Google STT)";
+    }
+
+    btnVoiceInput.addEventListener("click", () => {
+      if (hasSubmittedPrompt) return;
+      if (isListening) {
+        recognition.stop();
+        stopListening();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error("Failed to start speech recognition:", e);
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Speech recognition setup error:", err);
+  }
+} else if (btnVoiceInput) {
+  btnVoiceInput.addEventListener("click", () => {
+    showToast("🎙️ Voice STT not supported on this browser version. Please type your prompt.");
+  });
+}
+
 btnSubmitPrompt.addEventListener("click", () => {
   const text = promptInput.value.trim();
   const words = text.split(/\s+/).filter(Boolean);

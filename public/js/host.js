@@ -59,8 +59,29 @@ let lastBeepedSec = null;
 
 let countdownJingleAudio = null;
 
+let audioUnlocked = false;
+
+function playTestChime() {
+  try {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.18);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.18);
+    });
+  } catch (e) {}
+}
+
 // Unlocks browser Web Audio API policy on user interaction (click/tap anywhere on host screen)
-function initAudio() {
+function initAudio(withTestChime = false) {
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -72,16 +93,24 @@ function initAudio() {
       countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
       countdownJingleAudio.volume = 0.95;
     }
-    // Unlock HTML5 Audio playback on user click gesture
-    countdownJingleAudio.play().then(() => {
-      countdownJingleAudio.pause();
-      countdownJingleAudio.currentTime = 0;
-      console.log("🔊 HTML5 Countdown MP3 Audio successfully unlocked!");
-    }).catch(e => console.warn("Audio unlock catch:", e));
+
+    if (!audioUnlocked) {
+      audioUnlocked = true;
+      // Unlock HTML5 Audio playback on user click gesture
+      countdownJingleAudio.play().then(() => {
+        countdownJingleAudio.pause();
+        countdownJingleAudio.currentTime = 0;
+        console.log("🔊 HTML5 Countdown MP3 Audio successfully unlocked!");
+      }).catch(e => console.warn("Audio unlock catch:", e));
+
+      if (withTestChime) {
+        playTestChime();
+      }
+    }
 
     const banner = document.getElementById("soundUnlockBanner");
     if (banner) {
-      banner.textContent = "🔊 GAME AUDIO ACTIVE — 10S COUNTDOWN MUSIC JINGLE READY";
+      banner.textContent = "🔊 GAME AUDIO ACTIVE & TESTED — 10S COUNTDOWN MUSIC JINGLE READY";
       banner.classList.add("unlocked");
     }
     const btnToggle = document.getElementById("btnToggleSound");
@@ -93,7 +122,7 @@ function initAudio() {
 
 function playCountdownJingleMP3() {
   try {
-    initAudio();
+    initAudio(false);
     if (!countdownJingleAudio) {
       countdownJingleAudio = new Audio("/music/countdown_jingle.mp3");
       countdownJingleAudio.volume = 0.95;
@@ -124,9 +153,9 @@ function stopCountdownJingleMP3() {
   }
 }
 
-window.addEventListener('click', initAudio);
-window.addEventListener('touchstart', initAudio);
-window.addEventListener('keydown', initAudio);
+window.addEventListener('click', () => initAudio(true));
+window.addEventListener('touchstart', () => initAudio(true));
+window.addEventListener('keydown', () => initAudio(true));
 
 // Update Room Badge Display
 if (roomCodeBadge) {

@@ -369,3 +369,51 @@ input[type="text"]:focus, textarea:focus {
     box-shadow: none !important;
   }
 }
+
+/* Voice Input Speech-to-Text Button */
+.voice-input-container {
+  margin: 0.65rem 0 1rem 0;
+  width: 100%;
+}
+
+.btn-voice-input {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: rgba(66, 133, 244, 0.15);
+  color: var(--g-blue);
+  border: 1.5px solid rgba(66, 133, 244, 0.4);
+  border-radius: 12px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-voice-input:hover {
+  background: rgba(66, 133, 244, 0.25);
+  border-color: var(--g-blue);
+  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.btn-voice-input.listening {
+  background: rgba(234, 67, 53, 0.25) !important;
+  color: #ff4d4d !important;
+  border-color: var(--g-red) !important;
+  animation: pulseRedMic 1.2s infinite ease-in-out !important;
+}
+
+@keyframes pulseRedMic {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(234, 67, 53, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(234, 67, 53, 0.85);
+    transform: scale(1.02);
+  }
+}
