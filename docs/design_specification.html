@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design & Technical Specification - Are You a Prompting Wizard?</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700;800&family=Inter:wght@400;600;700;800&family=Outfit:wght@700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-surface: #151c2c;
+      --bg-card: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.12);
+      
+      --g-blue: #4285f4;
+      --g-red: #ea4335;
+      --g-yellow: #fbbc04;
+      --g-green: #34a853;
+      --accent-purple: #a855f7;
+      --accent-cyan: #06b6d4;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-heading: 'Google Sans', 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 2.5rem;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .dots-badge {
+      display: inline-flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.6rem 0.9rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-color);
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .d-blue { background: var(--g-blue); box-shadow: 0 0 10px var(--g-blue); }
+    .d-red { background: var(--g-red); box-shadow: 0 0 10px var(--g-red); }
+    .d-yellow { background: var(--g-yellow); box-shadow: 0 0 10px var(--g-yellow); }
+    .d-green { background: var(--g-green); box-shadow: 0 0 10px var(--g-green); }
+
+    .doc-title {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ffffff, var(--g-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    .doc-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .meta-badges {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 1px solid transparent;
+    }
+    .b-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.4); }
+    .b-blue { background: rgba(66, 133, 244, 0.15); color: #93c5fd; border-color: rgba(66, 133, 244, 0.4); }
+    .b-green { background: rgba(52, 168, 83, 0.15); color: #86efac; border-color: rgba(52, 168, 83, 0.4); }
+
+    /* Main Sections */
+    section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--g-blue);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    h3 {
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+      color: var(--accent-purple);
+      margin: 1.5rem 0 0.75rem 0;
+    }
+
+    p, li {
+      color: var(--text-main);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.4);
+      color: #38bdf8;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    pre {
+      background: #070a12;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    /* Cards Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .spec-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .spec-card h4 {
+      font-family: var(--font-heading);
+      color: var(--g-yellow);
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      background: var(--bg-card);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 0.85rem 1.2rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--g-blue);
+      font-family: var(--font-heading);
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .tag-get { background: rgba(52, 168, 83, 0.2); color: #4ade80; }
+    .tag-post { background: rgba(66, 133, 244, 0.2); color: #60a5fa; }
+    .tag-socket { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 2rem 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Specification Header -->
+  <header>
+    <div class="brand-group">
+      <div class="dots-badge">
+        <span class="dot d-blue"></span>
+        <span class="dot d-red"></span>
+        <span class="dot d-yellow"></span>
+        <span class="dot d-green"></span>
+      </div>
+      <div>
+        <h1 class="doc-title">Are You a Prompting Wizard?</h1>
+        <span class="doc-sub">Complete Architecture & Design Specification</span>
+      </div>
+    </div>
+
+    <div class="meta-badges">
+      <span class="badge b-purple">v2.0.0 Specification</span>
+      <span class="badge b-blue">Google Cloud Run</span>
+      <span class="badge b-green">Node.js + Socket.IO</span>
+    </div>
+  </header>
+
+  <!-- 1. Executive Summary -->
+  <section>
+    <h2>🚀 1. Executive Summary & Product Vision</h2>
+    <p>
+      <strong>"Are You a Prompting Wizard?"</strong> (Repository: <code>aosterloh/prompt-wizard</code>) is a real-time, interactive multi-player party game web application designed for live audience participation. Players connect using their smartphones by scanning a QR code on the main stage display.
+    </p>
+    <p>
+      Each round presents a hidden target benchmark image (`target_1.png` .. `target_15.png`). Players enter custom prompts attempting to reverse-engineer and recreate the benchmark image using Google's Gemini AI. The game automatically evaluates prompt similarity, synthesizes player artworks, and presents anonymized voting choices before revealing the winner with Gemini AI Judge rationale and confetti celebrations!
+    </p>
+  </section>
+
+  <!-- 2. System Architecture -->
+  <section>
+    <h2>🏗️ 2. System Architecture & Tech Stack</h2>
+    <div class="grid-2">
+      <div class="spec-card">
+        <h4>🖥️ Core Backend Stack</h4>
+        <ul>
+          <li><strong>Runtime:</strong> Node.js (ES Modules)</li>
+          <li><strong>Web Framework:</strong> Express.js</li>
+          <li><strong>Real-Time Networking:</strong> Socket.IO 4.x</li>
+          <li><strong>Deployment Platform:</strong> Google Cloud Run (Containerized Docker)</li>
+          <li><strong>Environment Security:</strong> Sanitized <code>GEMINI_API_KEY</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <h4>🎨 Frontend & Client Architecture</h4>
+        <ul>
+          <li><strong>Logic & Controllers:</strong> Vanilla JavaScript (DOM & Web Audio API)</li>
+          <li><strong>Styling System:</strong> Modern Vanilla CSS Tokens & Responsive Layouts</li>
+          <li><strong>Client QR Generator:</strong> <code>public/js/qrcode.min.js</code> (Pure Canvas 0ms Latency)</li>
+          <li><strong>Animations:</strong> Canvas Confetti (CDN)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. State Machine -->
+  <section>
+    <h2>🔄 3. Game Lifecycle State Machine</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>State ID</th>
+          <th>Description</th>
+          <th>Host Display Behavior</th>
+          <th>Player Device Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LOBBY</code></td>
+          <td>Initial room landing & player onboarding</td>
+          <td>Displays 0ms QR code, prominent top-right Wizards Joined counter, 2s rotating target benchmark carousel.</td>
+          <td>Name entry form & room code confirmation. Shows "Connected! Waiting for host to start..." upon joining.</td>
+        </tr>
+        <tr>
+          <td><code>PROMPTING</code></td>
+          <td>60-second prompt submission window</td>
+          <td>Prominent centerpiece timer box with 10s Web Audio countdown beeps. Displays target artwork and real-time progress bar.</td>
+          <td>Target benchmark preview image and text input area to write & submit custom reverse-engineering prompt.</td>
+        </tr>
+        <tr>
+          <td><code>GENERATING</code></td>
+          <td>AI image synthesis & moderation</td>
+          <td>Animated magic wand spinner and real-time percentage progress bar (0% - 100%).</td>
+          <td>"Magic wand conjuring your artwork..." status feedback screen.</td>
+        </tr>
+        <tr>
+          <td><code>VOTING</code></td>
+          <td>Audience vote on anonymized choices A–E</td>
+          <td>Grid of anonymized artworks labeled A–E with AI Similarity Scores (0–100/100) and Gemini AI Judge pick trigger.</td>
+          <td>Interactive voting cards (A–E) allowing players to submit 1 vote for their favorite artwork.</td>
+        </tr>
+        <tr>
+          <td><code>TIEBREAK</code></td>
+          <td>Gemini AI Judge resolves vote ties</td>
+          <td>Displays <code>⚖️✨ WE HAVE A TIE!</code> card with animated spinner while Gemini evaluates prompt nuances.</td>
+          <td>"Evaluating tie-breaker..." waiting screen.</td>
+        </tr>
+        <tr>
+          <td><code>RESULTS</code></td>
+          <td>Final winner reveal & celebration</td>
+          <td>Side-by-side Target vs Winner Spotlight card, crown badge, player name, prompt text, confetti burst, and AI rationale.</td>
+          <td>Winner spotlight display and "Play Next Round" readiness indicator.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4. Key Subsystems Specification -->
+  <section>
+    <h2>⚙️ 4. Key Subsystem Specifications</h2>
+
+    <h3>📷 Infallible Client-Side QR Code Engine (`public/js/qrcode.min.js`)</h3>
+    <p>
+      To prevent reliance on third-party network APIs (`api.qrserver.com`) that can be blocked by extensions or firewalls, the host uses a standalone, zero-dependency HTML5 Canvas QR generator.
+    </p>
+    <ul>
+      <li><strong>Error Correction Level:</strong> Level H (30% error recovery capacity).</li>
+      <li><strong>Latency:</strong> 0ms instant synchronous base64 Data URI generation.</li>
+      <li><strong>URL Resolution:</strong> Derives player join URL synchronously from <code>window.location.origin</code> replacing <code>/host</code> with <code>/player?room=WIZARD</code>.</li>
+    </ul>
+
+    <h3>🎵 Web Audio API Countdown Synthesizer</h3>
+    <p>
+      An embedded synthesizer built directly with the browser's native <code>AudioContext</code>. Triggers escalating audio countdown beeps during the final 10 seconds of the PROMPTING phase:
+    </p>
+    <ul>
+      <li><strong>Seconds 10–6:</strong> 440 Hz (Standard A tone)</li>
+      <li><strong>Seconds 5–4:</strong> 660 Hz (Medium alert pitch)</li>
+      <li><strong>Seconds 3–1:</strong> 880 Hz (High urgency pitch)</li>
+    </ul>
+
+    <h3>🤖 Gemini AI Judge Engine</h3>
+    <p>
+      When votes end in a tie or host triggers the AI Judge, Socket.IO emits <code>host:askAiJudge</code>. The server queries Gemini AI to evaluate the similarity between player prompt texts and the benchmark image, producing:
+    </p>
+    <ul>
+      <li><strong>Winning Choice Letter:</strong> Selected artwork (e.g. choice `B`).</li>
+      <li><strong>AI Rationale Text:</strong> Explainer text detailing why the prompt best captured color composition, subject detail, and stylistic fidelity.</li>
+    </ul>
+  </section>
+
+  <!-- 5. Network & API Protocols -->
+  <section>
+    <h2>📡 5. Network Protocols & Socket.IO Events</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Event Name</th>
+          <th>Direction</th>
+          <th>Payload Data</th>
+          <th>Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>host:register</code></td>
+          <td>Client ➔ Server</td>
+          <td><code>{ roomCode: "WIZARD" }</code></td>
+          <td>Registers host socket connection to room channel.</td>
+        </tr>
+        <tr>
+          <td><code>player:join</code></td>
+          <td>Client ➔ Server</td>
+          <td><code>{ roomCode, playerName }</code></td>
+          <td>Joins player to active game session.</td>
+        </tr>
+        <tr>
+          <td><code>player:submitPrompt</code></td>
+          <td>Client ➔ Server</td>
+          <td><code>{ roomCode, promptText }</code></td>
+          <td>Submits player prompt for current benchmark image.</td>
+        </tr>
+        <tr>
+          <td><code>host:startGame</code></td>
+          <td>Client ➔ Server</td>
+          <td><code>{ roomCode }</code></td>
+          <td>Transitions game state from <code>LOBBY</code> to <code>PROMPTING</code>.</td>
+        </tr>
+        <tr>
+          <td><code>room:stateUpdate</code></td>
+          <td>Server ➔ Client</td>
+          <td><code>{ gameState, players, currentTargetImage, ... }</code></td>
+          <td>Broadcasts complete room state snapshot to sync UI.</td>
+        </tr>
+        <tr>
+          <td><code>room:timerUpdate</code></td>
+          <td>Server ➔ Client</td>
+          <td><code>{ timer: 45 }</code></td>
+          <td>Broadcasts 1-second countdown ticks to host & players.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6. Deployment & Environment Setup -->
+  <section>
+    <h2>🌍 6. Deployment & Environment Setup</h2>
+    <pre><code># 1. Clone Official Repository
+git clone https://github.com/aosterloh/prompt-wizard.git
+cd prompt-wizard
+
+# 2. Local Environment Setup
+cp .env.example .env
+# Edit .env and set GEMINI_API_KEY
+
+# 3. Deploy to Google Cloud Run
+gcloud run deploy art-showdown \
+  --source . \
+  --region europe-west3 \
+  --allow-unauthenticated \
+  --project aosterloh-cs-muc \
+  --set-env-vars "GEMINI_API_KEY=YOUR_GEMINI_KEY"</code></pre>
+  </section>
+
+  <footer>
+    <p>Are You a Prompting Wizard? &copy; 2026 Google DeepMind Agentic Coding. All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>
