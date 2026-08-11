@@ -420,11 +420,10 @@ function playCountdownBeep(secondsLeft) {
     }
     const submittedCount = players.filter(p => p.isSubmitted).length;
     const pct = players.length > 0 ? (submittedCount / players.length) * 100 : 0;
-    promptProgressBar.style.width = `${pct}%`;
-    promptProgressText.textContent = `${submittedCount} / ${players.length} Prompts Submitted`;
-  } else {
-    lastBeepedSec = null;
+    if (promptProgressBar) promptProgressBar.style.width = `${pct}%`;
+    if (promptProgressText) promptProgressText.textContent = `${submittedCount} / ${players.length} Prompts Submitted`;
   } else if (gameState === "GENERATING") {
+    lastBeepedSec = null;
     if (stageGenerating) stageGenerating.classList.add("active");
     if (genProgressBarFill) genProgressBarFill.style.width = `${genProgressPct}%`;
     if (genProgressPct) genProgressPct.textContent = `${genProgressPct}% COMPLETE`;
