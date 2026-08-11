@@ -66,6 +66,15 @@ function initAudio() {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+    const banner = document.getElementById("soundUnlockBanner");
+    if (banner) {
+      banner.textContent = "🔊 GAME AUDIO ACTIVE — 10S COUNTDOWN MUSIC & SOUND FX READY";
+      banner.classList.add("unlocked");
+    }
+    const btnToggle = document.getElementById("btnToggleSound");
+    if (btnToggle) {
+      btnToggle.textContent = "🔊 Sound: ACTIVE";
+    }
   } catch (e) {}
 }
 window.addEventListener('click', initAudio);

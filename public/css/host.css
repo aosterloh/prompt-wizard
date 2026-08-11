@@ -363,6 +363,36 @@ body {
 }
 
 /* 1. LOBBY STAGE */
+.sound-unlock-banner {
+  background: linear-gradient(135deg, rgba(234, 67, 53, 0.25), rgba(251, 188, 4, 0.25));
+  border: 2px dashed var(--g-red);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(234, 67, 53, 0.3);
+  transition: all 0.3s ease;
+  animation: pulseAudioBanner 2s infinite;
+  user-select: none;
+}
+
+.sound-unlock-banner.unlocked {
+  background: linear-gradient(135deg, rgba(52, 168, 83, 0.2), rgba(66, 133, 244, 0.2));
+  border: 2px solid var(--g-green);
+  color: var(--g-green);
+  animation: none;
+  box-shadow: 0 0 15px rgba(52, 168, 83, 0.3);
+}
+
+@keyframes pulseAudioBanner {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.015); opacity: 1; }
+}
 .lobby-hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
