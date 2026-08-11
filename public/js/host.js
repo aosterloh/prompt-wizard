@@ -145,20 +145,15 @@ async function loadQrCode(targetCode) {
   }
   if (qrCodeImg) {
     if (typeof window.generateClientQrDataUri === 'function') {
-      const clientQrDataUri = window.generateClientQrDataUri(playerUrl);
+      const clientQrDataUri = window.generateClientQrDataUri(playerUrl, (asyncDataUri) => {
+        if (asyncDataUri && qrCodeImg) {
+          qrCodeImg.src = asyncDataUri;
+        }
+      });
       if (clientQrDataUri) {
         qrCodeImg.src = clientQrDataUri;
       }
     }
-  }
-  try {
-    const res = await fetch(`/api/qr?room=${encodeURIComponent(targetCode || roomCode)}`);
-    const data = await res.json();
-    if (data.qrUri && qrCodeImg) {
-      qrCodeImg.src = data.qrUri;
-    }
-  } catch (err) {
-    console.error("Failed to load server QR code:", err);
   }
 }
 loadQrCode(roomCode);
