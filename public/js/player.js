@@ -76,6 +76,14 @@ socket.on("room:timerUpdate", ({ timer }) => {
       mobileProminentBox.classList.remove("urgent-mobile");
     }
   }
+
+  if (promptInput) {
+    if (timer > 0 && timer <= 10) {
+      promptInput.classList.add("urgent-prompt-border");
+    } else {
+      promptInput.classList.remove("urgent-prompt-border");
+    }
+  }
 });
 
 socket.on("room:stateUpdate", (data) => {
