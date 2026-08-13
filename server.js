@@ -30,6 +30,22 @@ app.use("/docs", express.static(path.join(__dirname, "docs")));
 app.get("/spec", (req, res) => res.sendFile(path.join(__dirname, "docs", "design_specification.html")));
 app.use(express.json());
 
+// Local File Session Logger for Debugging & Auditing
+const logsDir = path.join(__dirname, "logs");
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+const sessionLogFile = path.join(logsDir, "game_sessions.log");
+
+function logGameSession(roomCode, eventName, details = "") {
+  const timestamp = new Date().toISOString();
+  const logLine = `[${timestamp}] [ROOM #${roomCode || "GLOBAL"}] [${eventName}] ${typeof details === 'object' ? JSON.stringify(details) : details}\n`;
+  console.log(logLine.trim());
+  fs.appendFile(sessionLogFile, logLine, err => {
+    if (err) console.error("Error writing to session log file:", err);
+  });
+}
+
 // In-Memory Multi-Room Store
 const roomsMap = new Map();
 
@@ -627,10 +643,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("host:forceEndVoting", ({ roomCode }) => {
-    const code = (roomCode || socket.roomCode || "WIZARD").toUpperCase();
+    const code = (roomCode || socket.roomCode || "").toUpperCase().trim();
     const room = roomsMap.get(code);
-    if (room && room.gameState === "VOTING") {
+    if (room && (room.gameState === "VOTING" || room.gameState === "TIEBREAK")) {
+      logGameSession(code, "HOST_FORCE_END_VOTING", { hostSocketId: socket.id });
       transitionToResults(room).catch(err => console.error("Error in forceEndVoting:", err));
+    } else {
+      logGameSession(code, "FORCE_END_VOTING_FAILED", { state: room ? room.gameState : "NO_ROOM" });
     }
   });
 
@@ -762,10 +781,14 @@ io.on("connection", (socket) => {
     player.vote = letter;
     socket.emit("player:voteRecorded", { letter });
 
+    const votedCount = room.players.filter(p => !!p.vote).length;
+    logGameSession(code, "PLAYER_VOTED", { playerName: player.name, playerId: player.id, letter, votedCount, totalPlayers: room.players.length });
+
     broadcastState(code);
 
     const allVoted = room.players.length > 0 && room.players.every(p => !!p.vote);
     if (allVoted && room.gameState === "VOTING") {
+      logGameSession(code, "ALL_VOTES_RECEIVED", { totalVotes: votedCount });
       transitionToResults(room).catch(err => console.error("Error transitioning to results:", err));
     }
   });

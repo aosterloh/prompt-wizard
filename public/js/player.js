@@ -266,7 +266,7 @@ function renderVoteButtons(artworks) {
       const letter = btn.getAttribute("data-letter");
       document.querySelectorAll(".btn-vote").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      socket.emit("player:vote", { roomCode, letter });
+      socket.emit("player:vote", { roomCode, letter, playerId: myPlayerId });
     });
   });
 }
