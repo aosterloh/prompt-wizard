@@ -751,7 +751,7 @@ io.on("connection", (socket) => {
   socket.on("player:vote", ({ roomCode, letter, playerId }) => {
     const code = (roomCode || socket.roomCode || "WIZARD").toUpperCase();
     const room = roomsMap.get(code);
-    if (!room || room.gameState !== "VOTING") return;
+    if (!room || (room.gameState !== "VOTING" && room.gameState !== "TIEBREAK")) return;
 
     let player = room.players.find(p => p.socketId === socket.id);
     if (!player && playerId) {
@@ -762,14 +762,10 @@ io.on("connection", (socket) => {
     player.vote = letter;
     socket.emit("player:voteRecorded", { letter });
 
-    // Filter active participating players who submitted a prompt this round
-    const activePlayers = room.players.filter(p => p.isSubmitted || p.prompt);
-    const targetGroup = activePlayers.length > 0 ? activePlayers : room.players;
-
     broadcastState(code);
 
-    const allVoted = targetGroup.length > 0 && targetGroup.every(p => !!p.vote);
-    if (allVoted) {
+    const allVoted = room.players.length > 0 && room.players.every(p => !!p.vote);
+    if (allVoted && room.gameState === "VOTING") {
       transitionToResults(room).catch(err => console.error("Error transitioning to results:", err));
     }
   });

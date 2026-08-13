@@ -95,7 +95,7 @@ socket.on("room:timerUpdate", ({ timer }) => {
 });
 
 socket.on("room:stateUpdate", (data) => {
-  const { gameState, generatedArtworks } = data;
+  const { gameState, generatedArtworks, players } = data;
 
   if (gameState === "LOBBY") {
     switchView(viewLobby);
@@ -111,7 +111,13 @@ socket.on("room:stateUpdate", (data) => {
   } else if (gameState === "VOTING") {
     switchView(viewVoting);
     renderVoteButtons(generatedArtworks);
-  } else if (gameState === "RESULTS") {
+
+    // Sync vote recorded badge if server registered this player's vote
+    const me = (players || []).find(p => p.socketId === socket.id || p.id === myPlayerId);
+    if (me && me.hasVoted && voteRecordedNotice) {
+      voteRecordedNotice.classList.remove("hidden");
+    }
+  } else if (gameState === "RESULTS" || gameState === "TIEBREAK") {
     switchView(viewResults);
   }
 });
