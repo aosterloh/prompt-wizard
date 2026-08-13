@@ -693,11 +693,6 @@ io.on("connection", (socket) => {
 
     socket.emit("player:joinedSuccess", { playerId: player.id, name: player.name, number: player.number, roomCode: code });
     broadcastState(code);
-
-    // Auto-start game automatically when 5 players have joined!
-    if (room.gameState === "LOBBY" && room.players.length >= 5) {
-      transitionToPrompting(room);
-    }
   });
 
   socket.on("player:updatePrompt", ({ roomCode, promptText }) => {
